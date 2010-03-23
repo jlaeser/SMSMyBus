@@ -1,0 +1,79 @@
+application: smsmybus
+version: 8
+runtime: python
+api_version: 1
+
+inbound_services:
+- mail
+
+handlers:
+
+- url: /
+  static_files: index.html
+  upload: index.html
+
+- url: /_ah/mail/.+
+  script: main.py
+  login: admin
+  
+- url: /img/(.*)
+  static_files: img/\1
+  upload: img/(.*)
+  
+- url: /style.css
+  static_files: style.css
+  upload: style.css
+
+- url: /favicon.ico
+  static_files: img/favicon.ico
+  upload: img/favicon.ico
+  
+- url: /robots.txt
+  static_files: robots.txt
+  upload: robots.txt
+
+- url: /crawlingtask
+  script: main.py
+  login: admin
+
+- url: /loggingtask
+  script: main.py
+  login: admin
+
+- url: /sendsmstask
+  script: main.py
+  login: admin
+  
+- url: /configure
+  script: main.py
+  login: admin
+    
+- url: /cleandb
+  script: main.py
+  login: admin
+    
+#
+# ADMIN access
+#      
+- url: /admin.*
+  script: admin.py
+  login: admin
+
+# 
+# PHONE access
+#
+- url: /phone/.*
+  script: phone.py
+
+#
+# TWITTER access
+#
+- url: /twitter/.*
+  script: twitter.py
+
+#
+# catch all...
+#
+- url: /.*
+  script: main.py
+
