@@ -1,0 +1,4 @@
+cron:
+- description: aggregation table cleaner
+  url: /cleandb
+  schedule: every day 9:00

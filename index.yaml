@@ -1,0 +1,47 @@
+indexes:
+
+- kind: RouteListing
+  properties:
+  - name: key
+  - name: route
+    direction: desc
+
+- kind: RouteListing
+  properties:
+  - name: direction
+  - name: route
+    direction: desc
+
+- kind: RouteListing
+  properties:
+  - name: stopID
+  - name: route
+    direction: desc
+
+- kind: RouteListing
+  properties:
+  - name: scheduleURL
+  - name: route
+    direction: desc
+    
+- kind: RouteListing
+  properties:
+  - name: stopID
+  - name: route
+  
+- kind: DirectionListing
+  properties:
+  - name: key
+  - name: id
+    direction: desc
+    
+- kind: RouteListing
+  properties:
+  - name: sid
+  - name: time
+
+- kind: BusStopAggregation
+  properties:
+  - name: sid
+  - name: time
+  - name: dateAdded
