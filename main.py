@@ -307,28 +307,25 @@ class AggregationHandler(webapp.RequestHandler):
                 arrival = slot['title']
                 textBody = arrival.replace('P.M.','pm').replace('A.M.','am')
                 valid = True
-                break
-        
-        if valid:
-          # add these results to datastore until we're ready to put
-          # them all together
-          stop = BusStopAggregation()
-          stop.stopID = stopID
-          stop.routeID = routeID
-          stop.sid = sid
+                # add these results to datastore until we're ready to put
+                # them all together
+                stop = BusStopAggregation()
+                stop.stopID = stopID
+                stop.routeID = routeID
+                stop.sid = sid
           
-          # turn the arrival time into absolute minutes
-          logging.debug("chop up arrival time... %s" % arrival)
-          hours = int(arrival.split(':')[0])
-          if arrival.find('P.M.') > 0 and int(hours) < 12:
-              hours += 12
-          minutes = int(arrival.split(':')[1].split()[0])
-          arrivalMinutes = (hours * 60) + minutes
-          logging.debug("chop up produced %s hours and %s minutes" % (hours,minutes))
-          stop.time = arrivalMinutes
+                # turn the arrival time into absolute minutes
+                logging.debug("chop up arrival time... %s" % arrival)
+                hours = int(arrival.split(':')[0])
+                if arrival.find('P.M.') > 0 and int(hours) < 12:
+                    hours += 12
+                minutes = int(arrival.split(':')[1].split()[0])
+                arrivalMinutes = (hours * 60) + minutes
+                logging.debug("chop up produced %s hours and %s minutes" % (hours,minutes))
+                stop.time = arrivalMinutes
           
-          stop.text = textBody + " toward %s" % directionLabel
-          stop.put()
+                stop.text = textBody + " toward %s" % directionLabel
+                stop.put()
 
         # create the task that glues all the messages together when 
         # we've finished the fetch tasks
