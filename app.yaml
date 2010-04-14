@@ -72,6 +72,12 @@ handlers:
   script: twitter.py
 
 #
+# REST access
+#
+- url: /rest/.*
+  script: rest.py
+
+#
 # catch all...
 #
 - url: /.*
