@@ -31,14 +31,6 @@ class RequestHandler(webapp.RequestHandler):
     
       textBody = bus.findBusAtStop(routeID,stopID)
 
-      # create an event to log the event
-      input = "%s %s" % (routeID, stopID)
-      task = Task(url='/loggingtask', params={'phone':'REST',
-                                              'inboundBody':("%s:%s", (routeID,stopID)),
-                                              'sid':'empty',
-                                              'outboundBody':textBody,})
-      task.add('phonelogger')
-      
       if textBody.find('route') > -1:
           xml = '<SMSMyBusResponse><status>-1</status></SMSMyBusResponse>'
           self.response.headers['Content-Type'] = 'text/xml'
@@ -59,8 +51,8 @@ class RequestHandler(webapp.RequestHandler):
       tlist = textBody.split('\n')
       
       tstamp_min = str(ltime.tm_min) if ltime.tm_min >= 10 else ("0"+str(ltime.tm_min))
-      tstamp_hour = str(ltime.tm_hour) if ltime.tm_hour <=12 else str(ltime.tm_hour-12)
-      tstamp_label = "pm" if ltime.tm_hour > 11 else "am"
+      tstamp_hour = str(ltime_hour) if ltime_hour <=12 else str(ltime_hour-12)
+      tstamp_label = "pm" if ltime_hour > 11 else "am"
       xml += '<timestamp>'+tstamp_hour+':'+tstamp_min+tstamp_label+'</timestamp>'
       
       xml += '<estimates>'
