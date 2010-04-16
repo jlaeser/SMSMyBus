@@ -34,6 +34,11 @@ a:visited {
   color: #888888;
 }
 
+#query-form {
+	margin-left: 300px;
+	text-align: right;
+}
+
 #form-container {
   background: #ffffff;
   width: 900px;
@@ -67,7 +72,6 @@ a:visited {
 .form-answer {
   font-size: 10px;
   text-align: left;
-  color: #888888;
   width: 100%;
 }
 
@@ -170,6 +174,11 @@ a:visited {
 }
 #feedback-details {
   font-size: 16px;
+}
+
+#estimates {
+	text-align: center;
+	font-size: 16px;
 }
 
 #powered-by {

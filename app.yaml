@@ -12,6 +12,10 @@ handlers:
   static_files: index.html
   upload: index.html
 
+- url: /dashboard
+  static_files: dashboard.html
+  upload: dashboard.html
+  
 - url: /_ah/mail/.+
   script: main.py
   login: admin
@@ -24,6 +28,10 @@ handlers:
   static_files: style.css
   upload: style.css
 
+- url: /jquery.timers-1.2.js
+  static_files: jquery.timers-1.2.js
+  upload: jquery.timers-1.2.js
+  
 - url: /favicon.ico
   static_files: img/favicon.ico
   upload: img/favicon.ico
@@ -51,7 +59,7 @@ handlers:
 - url: /cleandb
   script: main.py
   login: admin
-    
+      
 #
 # ADMIN access
 #      

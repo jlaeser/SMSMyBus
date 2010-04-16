@@ -363,6 +363,20 @@ class SendSMSHandler(webapp.RequestHandler):
                         
 ## end SendSMSHandler
 
+class DashboardHandler(webapp.RequestHandler):
+    
+    def get(self, routeID="", stopID=""):
+      template_values = {'route':routeID,
+                         'stop':stopID,
+                        }
+      
+      # generate the html
+      path = os.path.join(os.path.dirname(__file__), 'dashboard.html')
+      self.response.out.write(template.render(path, template_values))
+
+## end DashboardHandler
+
+
 def sendInvite(request):
     
       textBody = "You've been invited to use SMSMyBus to find real-time arrivals for your buses. Text your bus stop to this number to get started.(invited by " 
@@ -409,6 +423,7 @@ def main():
   logging.getLogger().setLevel(logging.DEBUG)
   application = webapp.WSGIApplication([('/', MainHandler),
                                         ('/request', RequestHandler),
+                                        ('/dashboard/(.*)/(.*)', DashboardHandler),
                                         ('/_ah/mail/.+', EmailRequestHandler),
                                         ('/configure', crawler.CrawlerHandler),
                                         ('/cleandb', CleanAggregatorHandler),

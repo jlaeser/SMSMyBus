@@ -38,26 +38,43 @@ class RequestHandler(webapp.RequestHandler):
                                               'sid':'empty',
                                               'outboundBody':textBody,})
       task.add('phonelogger')
+      
+      if textBody.find('route') > -1:
+          xml = '<SMSMyBusResponse><status>-1</status></SMSMyBusResponse>'
+          self.response.headers['Content-Type'] = 'text/xml'
+          self.response.out.write(xml)
+          return
 
-      xml = '<SMSMyBusResponse><route>' + routeID + '</route><stop>' + stopID + '</stop>'
+      xml = '<SMSMyBusResponse><status>0</status><route>' + routeID + '</route><stop>' + stopID + '</stop>'
       # transform the text a smidge so it can be pronounced more easily...
-      textBody = textBody.replace('pm', '').replace('am', '')
+      #textBody = textBody.replace('pm', '').replace('am', '')
       
       ltime = time.localtime()
-      ltime_min = (ltime.tm_hour-5) * 60 + ltime.tm_min
-      logging.debug("local time... %s day minutes %s" % (ltime,ltime_min))
+      ltime_hour = ltime.tm_hour - 5
+      ltime_hour += 24 if ltime_hour < 0 else 0
+      ltime_min = ltime_hour * 60 + ltime.tm_min
+      logging.debug("local time... %s (%s:%s) day minutes %s" % (ltime,ltime_hour,ltime.tm_min,ltime_min))
             
       logging.debug("textBody.... %s" % textBody)
       tlist = textBody.split('\n')
+      
+      tstamp_min = str(ltime.tm_min) if ltime.tm_min >= 10 else ("0"+str(ltime.tm_min))
+      tstamp_hour = str(ltime.tm_hour) if ltime.tm_hour <=12 else str(ltime.tm_hour-12)
+      tstamp_label = "pm" if ltime.tm_hour > 11 else "am"
+      xml += '<timestamp>'+tstamp_hour+':'+tstamp_min+tstamp_label+'</timestamp>'
       
       xml += '<estimates>'
       for t in tlist:
           logging.debug("convert %s" % t)
           if t.find(':') > -1:
+              if t.find('pm') > -1:
+                  t = t.replace('pm', '')
+                  adjust = 12 if int(t.split(':')[0]) < 12 else 0
+              else:
+                  t = t.replace('am', '')
+                  adjust = 0
               btime = t.split(':')
-              #btime = time.strptime(t, "%H:%M ")
-              logging.debug("formatted time... %s:%s" % (btime[0],btime[1]))
-              btime_hour = int(btime[0])+12
+              btime_hour = int(btime[0])+adjust
               btime_min = int(btime[1])
               delta_in_min = (btime_hour*60+int(btime[1])) - ltime_min
               xml += '<minutes>' + str(delta_in_min) + '</minutes>'
@@ -72,7 +89,7 @@ class RequestHandler(webapp.RequestHandler):
             
 def main():
   logging.getLogger().setLevel(logging.DEBUG)
-  application = webapp.WSGIApplication([('/rest/(.*)/(.*)', RequestHandler),
+  application = webapp.WSGIApplication([('/rest/(.*)/(.*)/', RequestHandler),
                                         ],
                                        debug=True)
   wsgiref.handlers.CGIHandler().run(application)
