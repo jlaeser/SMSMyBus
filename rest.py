@@ -2,6 +2,7 @@ import os
 import wsgiref.handlers
 import logging
 import time
+import re
 
 from google.appengine.api import users
 from google.appengine.api import memcache
@@ -13,8 +14,27 @@ from google.appengine.ext import webapp
 from google.appengine.runtime import apiproxy_errors
 import bus
 
+class StopRequestHandler(webapp.RequestHandler):
+    
+    def get(self, stopID=""):
+      # validate the request parameters
+      if len(stopID) == 0:
+        logging.info("Illegal web service call with stop %s" % stopID)
+        xml = '<SMSMyBusResponse><status>-1</status></SMSMyBusResponse>'
+        self.response.headers['Content-Type'] = 'text/xml'
+        self.response.out.write(xml)
+        return
+
+      xml = memcache.get(stopID)
+      if xml is None:
+        xml = '<SMSMyBusResponse><status>-1</status></SMSMyBusResponse>'
+          
+      self.response.headers['Content-Type'] = 'text/xml'
+      self.response.out.write(xml)
         
-class RequestHandler(webapp.RequestHandler):
+## end StopRequestHandler
+        
+class RouteRequestHandler(webapp.RequestHandler):
     
     def get(self, routeID="", stopID=""):
       
@@ -32,15 +52,64 @@ class RequestHandler(webapp.RequestHandler):
       textBody = bus.findBusAtStop(routeID,stopID)
 
       if textBody.find('route') > -1:
+          logging.error("bailing because we don't like the results... %s" % textBody)
           xml = '<SMSMyBusResponse><status>-1</status></SMSMyBusResponse>'
           self.response.headers['Content-Type'] = 'text/xml'
           self.response.out.write(xml)
           return
 
-      xml = '<SMSMyBusResponse><status>0</status><route>' + routeID + '</route><stop>' + stopID + '</stop>'
-      # transform the text a smidge so it can be pronounced more easily...
-      #textBody = textBody.replace('pm', '').replace('am', '')
+      xml = buildXMLResponse(textBody,routeID,stopID)                            
       
+      self.response.headers['Content-Type'] = 'text/xml'
+      self.response.out.write(xml)
+
+## end RequestHandler
+
+
+class PrefetchHandler(webapp.RequestHandler):
+    
+    def get(self, stopID=""):
+      
+      # validate the request parameters
+      if len(stopID) == 0:
+        logging.info("Illegal prefetch request with stop (%s)" % stopID)
+        return
+
+      # assume single argument requests are for a bus stop
+      sid = stopID + ":" + str(time.time())
+      caller = "prefetch:" + stopID
+      bus.aggregateBuses(stopID,sid,caller)
+      return      
+          
+## end PrefetchHandler
+
+def postResults(sid, caller, textBody):
+    
+    stopID = caller.split(':')[1]
+    if textBody.find('route') > -1 or textBody.find("isn't running") > -1:
+        xml = '<SMSMyBusResponse><status>-1</status></SMSMyBusResponse>'
+    else:
+        xml = buildXMLResponse(textBody,'',stopID)
+    
+    # stuff the xml into the memcache using the stopID as the key
+    worked = memcache.replace(stopID,xml)
+    if worked == False:
+        memcache.set(stopID,xml)    
+
+    # @todo backup the memcache using the datastore
+    
+    return
+
+## end postResults()
+      
+def buildXMLResponse(textBody, routeID, stopID):
+    
+      xml = ''
+      if len(routeID) == 0:
+          xml = '<SMSMyBusResponse><status>0</status><stop>' + stopID + '</stop>'
+      else:
+          xml = '<SMSMyBusResponse><status>0</status><route>' + routeID + '</route><stop>' + stopID + '</stop>'
+                
       ltime = time.localtime()
       ltime_hour = ltime.tm_hour - 5
       ltime_hour += 24 if ltime_hour < 0 else 0
@@ -58,30 +127,90 @@ class RequestHandler(webapp.RequestHandler):
       xml += '<estimates>'
       for t in tlist:
           logging.debug("convert %s" % t)
+          
           if t.find(':') > -1:
-              if t.find('pm') > -1:
-                  t = t.replace('pm', '')
-                  adjust = 12 if int(t.split(':')[0]) < 12 else 0
+              # parse aggregated data
+              if t.find('Route') > -1:
+                  m = re.search('Route\s+([0-9]+)\s+([0-9]+):([0-9]+)',t)
+                  if m is None:
+                      logging.error("no match for the route timing data!?!")
+                      xml += '</estimates></SMSMyBusResponse>'
+                      return
+                  else:
+                      logging.debug("found groupings %s" % m.group(0))
+                      logging.debug("found routeID %s" % m.group(1))
+                      logging.debug("found hour %s" % m.group(2))
+                      logging.debug("found minutes %s" % m.group(3))
+              
+                  #logging.debug("results of RE... %s" % m.groups())
+                  # pull out the routeID
+                  routeID = m.group(1)
+              
+                  # pull out the qualifiers                  
+                  direction = t.split('toward ')[1]
+                  logging.debug("found direction %s" % direction)
+                  
+                  # pull out the time
+                  btime_hour = int(m.group(2))
+                  btime_min = int(m.group(3))
+                  if t.find('pm') > -1:
+                      btime_hour += 12 if btime_hour < 12 else 0
+ 
+                  delta_in_min = (btime_hour*60 + btime_min) - ltime_min
+                  xml += '<minutes>' + routeID + ' in ' + str(delta_in_min) + ' toward ' + direction + '</minutes>'
               else:
-                  t = t.replace('am', '')
-                  adjust = 0
-              btime = t.split(':')
-              btime_hour = int(btime[0])+adjust
-              btime_min = int(btime[1])
-              delta_in_min = (btime_hour*60+int(btime[1])) - ltime_min
-              xml += '<minutes>' + str(delta_in_min) + '</minutes>'
-      xml += '</estimates>'
-                            
-      
-      self.response.headers['Content-Type'] = 'text/xml'
-      self.response.out.write(xml+'</SMSMyBusResponse>')
-                              
-## end PhoneRequestStopHandler
+                  # parse single route data
+                  
+                  # pull out the time
+                  btime_hour = int(t.split(':')[0])
+                  if t.find('pm') > -1:
+                      t = t.replace('pm','')
+                      btime_hour += 12 if btime_hour < 12 else 0
+                  else:
+                      t = t.replace('am','')
+ 
+                  btime_min = int(t.split(':')[1])
+                  delta_in_min = (btime_hour*60 + btime_min) - ltime_min
+                  xml += '<minutes>' + str(delta_in_min) + '</minutes>'
+                  
 
-            
+              
+      xml += '</estimates></SMSMyBusResponse>'
+      return xml
+  
+## end buildXMLResponse()
+
+class TestHandler(webapp.RequestHandler):
+    def get(self):
+        #t = 'Stop 1878'
+        t = 'Route 04  7:44 am toward STP'
+        m = re.search('([0-9]+):([0-9]+)',t)
+        #r = re.compile('([0-9]+):([0-9]+)')
+        #m = r.search(t)
+        
+        xml=''
+        if m is None:
+            xml = "no match"
+        else:
+            logging.debug("match... %s" % m)
+        
+            btime_hour = int(m.group(1))
+            logging.debug("found hours %s" % btime_hour)
+            btime_min = int(m.group(2))
+            logging.debug("found minutes %s" % btime_min)
+            delta_in_min = (btime_hour*60+btime_min) - 0
+            xml += '<minutes>' + str(delta_in_min) + '</minutes>'
+        
+        self.response.out.write(xml)
+    
+## end TestHandler
+
 def main():
-  logging.getLogger().setLevel(logging.DEBUG)
-  application = webapp.WSGIApplication([('/rest/(.*)/(.*)/', RequestHandler),
+  logging.getLogger().setLevel(logging.ERROR)
+  application = webapp.WSGIApplication([('/rest/prefetch/(.*)/', PrefetchHandler),
+                                        ('/rest/test/', TestHandler),
+                                        ('/rest/(.*)/(.*)/', RouteRequestHandler),
+                                        ('/rest/(.*)/', StopRequestHandler),
                                         ],
                                        debug=True)
   wsgiref.handlers.CGIHandler().run(application)

@@ -1,5 +1,5 @@
 application: smsmybus
-version: 8
+version: 9
 runtime: python
 api_version: 1
 
@@ -60,6 +60,10 @@ handlers:
   script: main.py
   login: admin
       
+- url: /rest/prefetch/.*
+  script: rest.py
+  login: admin
+  
 #
 # ADMIN access
 #      

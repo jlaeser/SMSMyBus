@@ -19,7 +19,6 @@ from data_model import RouteListing
 from data_model import DestinationListing
 
 
-#class Bus:
 def findBusAtStop(routeID, stopID):
     
       q = db.GqlQuery("SELECT * FROM RouteListing WHERE route = :1 AND stopID = :2",
@@ -113,25 +112,26 @@ def aggregateBuses(stopID, sid, caller):
         # this should never ever happen
         logging.error("Huh? There are no matching stops for this ID?!? %s" % stopID)
         textBody = "Snap! It looks like stop %s isn't running right now..." % stopID
+        # send back the error only if this was an SMS request
         if caller.isdigit() is True:
-          task = Task(url='/sendsmstask', params={'phone':caller,
-                                                  'sid':sid,
-                                                  'text':textBody,})
-          task.add('smssender')
-    else:          
-        memcache.add(sid, 0)
+            task = Task(url='/sendsmstask', params={'phone':caller,
+                                                    'sid':sid,
+                                                    'text':textBody,})
+            task.add('smssender')
+    else:
+        memcache.add(sid,0)
         for r in routeQuery:
-          counter = memcache.incr(sid)
-          task = Task(url='/aggregationtask', 
-                      params={'sid':sid,
-                              'stop':stopID,
-                              'route':r.route,
-                              'direction':r.direction,
-                              'url':r.scheduleURL,
-                              'caller':caller
-                              })
-          task.add('aggregation')
-          logging.debug("Added new task for bus aggregation %s route %s counter: %s" % (sid, r.route, counter))
+            counter = memcache.incr(sid)
+            task = Task(url='/aggregationtask', 
+                        params={'sid':sid,
+                                'stop':stopID,
+                                'route':r.route,
+                                'direction':r.direction,
+                                'url':r.scheduleURL,
+                                'caller':caller
+                                })
+            task.add('aggregation')
+            logging.debug("Added new task for bus aggregation %s route %s counter: %s" % (sid, r.route, counter))
 
     
     return

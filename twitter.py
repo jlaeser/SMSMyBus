@@ -23,7 +23,7 @@ BOTKEY = 'D56CE348-FEC4-4432-9005110B2D25A9D3'
 class TwitterHandler(webapp.RequestHandler):
     def post(self):
         if self.request.get('channel').lower() != 'private':
-            logging.debug("Someone (%s) tried to send a public Twitter request with, %s" % (user,requestBody))
+            logging.debug("Someone (%s) tried to send a public Twitter request with, %s" % (self.request.get('user'),requestBody))
             return
 
         user = self.request.get('user')
@@ -38,7 +38,6 @@ class TwitterHandler(webapp.RequestHandler):
         logging.debug("A new Twitter request from %s with the request, %s" % (user,requestBody))
         
         requestArgs = requestBody.split()
-        logging.debug("email body arguments %s" % requestArgs)
         if len(requestArgs) == 1:
             # assume single argument requests are for a bus stop
             sid = user + str(time.time())
