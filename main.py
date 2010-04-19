@@ -26,6 +26,8 @@ import twilio
 import twitter
 import crawler
 import bus
+import rest
+
 from data_model import PhoneLog
 from data_model import RouteListing
 from data_model import DestinationListing
@@ -185,6 +187,41 @@ class CleanDBHandler(webapp.RequestHandler):
     
 ## end CleanDBHandler
 
+
+# this handler is intended to send out SMS messages
+# via Twilio's REST interface
+class SendSMSHandler(webapp.RequestHandler):
+    
+    def post(self):
+      logging.info("Outbound SMS for ID %s to %s" % 
+                   (self.request.get('sid'), self.request.get('phone')))
+      account = twilio.Account(ACCOUNT_SID, ACCOUNT_TOKEN)
+      sms = {
+             'From' : CALLER_ID,
+             'To' : self.request.get('phone'),
+             'Body' : self.request.get('text'),
+             }
+      try:
+          account.request('/%s/Accounts/%s/SMS/Messages' % (API_VERSION, ACCOUNT_SID),
+                          'POST', sms)
+      except Exception, e:
+          logging.error("Twilio REST error: %s" % e)
+                        
+## end SendSMSHandler
+
+class DashboardHandler(webapp.RequestHandler):
+    
+    def get(self, routeID="", stopID=""):
+      template_values = {'route':routeID,
+                         'stop':stopID,
+                        }
+      
+      # generate the html
+      path = os.path.join(os.path.dirname(__file__), 'dashboard.html')
+      self.response.out.write(template.render(path, template_values))
+
+## end DashboardHandler
+
 # 
 # this handler is intended to be run by a cron job
 # to clean up old records in the BusStopAggregation
@@ -211,7 +248,15 @@ class CleanAggregatorHandler(webapp.RequestHandler):
     
 ## end CleanAggregatorHandlor
 
-    
+#
+# This handler is responsible for handling taskqueue requests 
+# used to report STOP ID request results.
+#
+# After all the sub-tasks are completed, this job will run to
+# aggregate the results and report on the results. 
+#
+# "Reporting" depends on how the request came in (sms, twitter, email, etc.)
+#    
 class AggregationSMSHandler(webapp.RequestHandler):
     def post(self):
       sid = self.request.get('sid')
@@ -224,9 +269,9 @@ class AggregationSMSHandler(webapp.RequestHandler):
       routeQuery = q.fetch(4)
       if len(routeQuery) > 0:
           stopID = routeQuery[0].stopID
-          textBody = "Stop: %s\n" % routeQuery[0].stopID
+          textBody = "Stop %s\n" % routeQuery[0].stopID
           for r in routeQuery:
-              textBody += "Route %s: " % r.routeID + " %s" % r.text + "\n"
+              textBody += "Route %s " % r.routeID + " %s" % r.text + "\n"
       else:
           logging.error("We couldn't find this SMS transaction information %s. Chances are there aren't any matches with the request." % sid)
           textBody = "Doesn't look good... Your bus isn't running right now!"
@@ -234,6 +279,10 @@ class AggregationSMSHandler(webapp.RequestHandler):
       if phone.find('@') > -1:
           # assuming that this is an email request - not SMS
           sendEmailResponse(phone, textBody)
+      elif phone.find('prefetch') > -1:
+          # assuming that this is a prefetch request - not SMS
+          rest.postResults(sid, phone, textBody)
+          return # don't log this event
       elif phone.isdigit() is False:
           # assuming that this is a twitter request - not SMS
           twitter.sendTwitterResponse(phone, textBody, stopID, routeID=-1)
@@ -335,47 +384,12 @@ class AggregationHandler(webapp.RequestHandler):
             task = Task(url='/aggregationSMStask', 
                         params={'sid':sid,'caller':caller})
             task.add('aggregationSMS')
-            logging.debug("Added new task send out the aggregation data via sms %s from %s" % (sid,caller))
+            logging.debug("Added new task to send out the aggregation data for ID %s, from caller %s" % (sid,caller))
             memcache.delete(sid)
           
         return;
     
 ## end AggregationHandler
-
-# this handler is intended to send out SMS messages
-# via Twilio's REST interface
-class SendSMSHandler(webapp.RequestHandler):
-    
-    def post(self):
-      logging.info("Outbound SMS for ID %s to %s" % 
-                   (self.request.get('sid'), self.request.get('phone')))
-      account = twilio.Account(ACCOUNT_SID, ACCOUNT_TOKEN)
-      sms = {
-             'From' : CALLER_ID,
-             'To' : self.request.get('phone'),
-             'Body' : self.request.get('text'),
-             }
-      try:
-          account.request('/%s/Accounts/%s/SMS/Messages' % (API_VERSION, ACCOUNT_SID),
-                          'POST', sms)
-      except Exception, e:
-          logging.error("Twilio REST error: %s" % e)
-                        
-## end SendSMSHandler
-
-class DashboardHandler(webapp.RequestHandler):
-    
-    def get(self, routeID="", stopID=""):
-      template_values = {'route':routeID,
-                         'stop':stopID,
-                        }
-      
-      # generate the html
-      path = os.path.join(os.path.dirname(__file__), 'dashboard.html')
-      self.response.out.write(template.render(path, template_values))
-
-## end DashboardHandler
-
 
 def sendInvite(request):
     
@@ -427,10 +441,10 @@ def main():
                                         ('/_ah/mail/.+', EmailRequestHandler),
                                         ('/configure', crawler.CrawlerHandler),
                                         ('/cleandb', CleanAggregatorHandler),
-                                        ('/crawlingtask', crawler.CrawlingTaskHandler),
-                                        ('/loggingtask', PhoneLogEventHandler),
                                         ('/aggregationtask', AggregationHandler),
                                         ('/aggregationSMStask', AggregationSMSHandler),
+                                        ('/crawlingtask', crawler.CrawlingTaskHandler),
+                                        ('/loggingtask', PhoneLogEventHandler),
                                         ('/sendsmstask', SendSMSHandler)
                                         ],
                                        debug=True)
