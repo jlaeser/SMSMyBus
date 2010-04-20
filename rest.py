@@ -17,6 +17,7 @@ import bus
 class StopRequestHandler(webapp.RequestHandler):
     
     def get(self, stopID=""):
+	  
       # validate the request parameters
       if len(stopID) == 0:
         logging.info("Illegal web service call with stop %s" % stopID)
@@ -69,6 +70,13 @@ class RouteRequestHandler(webapp.RequestHandler):
 class PrefetchHandler(webapp.RequestHandler):
     
     def get(self, stopID=""):
+	  # don't run these jobs during "off" hours
+      ltime = time.localtime()
+      ltime_hour = ltime.tm_hour - 5
+      ltime_hour += 24 if ltime_hour < 0 else 0
+      if ltime_hour > 1 and ltime_hour < 6:
+	      self.response.out.write('offline')
+	      return
       
       # validate the request parameters
       if len(stopID) == 0:
