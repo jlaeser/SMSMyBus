@@ -434,7 +434,7 @@ def sendEmailResponse(email, textBody):
     message.send()
             
 def main():
-  logging.getLogger().setLevel(logging.DEBUG)
+  logging.getLogger().setLevel(logging.INFO)
   application = webapp.WSGIApplication([('/', MainHandler),
                                         ('/request', RequestHandler),
                                         ('/dashboard/(.*)/(.*)', DashboardHandler),
