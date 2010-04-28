@@ -64,6 +64,20 @@
  <hr>
  
  <div id="spacer"> </div>
+ There have been a total of {{ total }} requests by {{ uniques }} callers
+ <table id="callerlog">
+  <thead><tr>
+   <th>Caller</th>
+   <th>Count</th>
+  </tr></thead>
+ {% for c in callers %}
+  <tr>
+   <td>{{ c.caller }}</td>
+   <td>{{ c.counter }}</td>
+  </tr>
+ {% endfor %}
+ </table>
+ <hr></hr>
  <table id="phonelog">
   <thead><tr>
    <th>Phone</th>

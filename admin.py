@@ -1,6 +1,7 @@
 import os
 import wsgiref.handlers
 import logging
+from operator import itemgetter
 
 from google.appengine.api import users
 from google.appengine.api.urlfetch import DownloadError
@@ -24,10 +25,55 @@ class AdminHandler(webapp.RequestHandler):
           greeting = ("<a href=\"%s\">Sign in</a>." %
                         users.create_login_url("/"))
               
+      # do some analysis on the request history...
+      total = 0
+      callers = dict()
+      reqs = dict()
+      cursor = None
+      # Start a query for all Person entities.
+      q = PhoneLog.all()
+      while q is not None:
+          # If the app stored a cursor during a previous request, use it.
+          if cursor:
+              q.with_cursor(cursor)
+
+          # Perform the query to get 500 results.
+          log_events = q.fetch(500)
+          cursor = q.cursor()
+
+          logQuery = q.fetch(500)
+          if len(logQuery) > 0:
+            total += len(logQuery)
+            logging.debug('parsing log entries %s' % total)
+            for e in logQuery:
+                if e.phone in callers:
+                    callers[e.phone] += 1
+                else:
+                    callers[e.phone] = 1
+                    
+                if e.body in reqs:
+                    reqs[e.body] += 1
+                else:
+                    reqs[e.body] = 1
+          else:
+              logging.debug('nothing left!')
+              break
+
+      # revew the results and generate the data for the template
+      caller_stats = []
+      sorted_callers = callers.items()
+      sorted_callers.sort(key=itemgetter(1),reverse=True)
+      for key,value in sorted_callers:
+          logging.debug("caller stat... %s : %s" % (key,value))
+          caller_stats.append({'caller':key,
+                               'counter':value,
+                             })
+      uniques = len(sorted_callers)
+      
       # display some recent call history
       results = []
       q = db.GqlQuery("SELECT * FROM PhoneLog ORDER BY date DESC")
-      logQuery = q.fetch(15)
+      logQuery = q.fetch(30)
       if len(logQuery) > 0:
           for r in logQuery:
               results.append({'phone':r.phone,
@@ -42,7 +88,11 @@ class AdminHandler(webapp.RequestHandler):
           logging.error("We couldn't find any history!?!")
 
       # add the counter to the template values
-      template_values = {'greeting':greeting,'events':results}
+      template_values = {'greeting':greeting,
+                         'total':total,
+                         'uniques':uniques,
+                         'callers':caller_stats,
+                         'events':results}
         
       # create a page that provides a form for sending an SMS message
       path = os.path.join(os.path.dirname(__file__), 'admin.html')

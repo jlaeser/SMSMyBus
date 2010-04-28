@@ -232,15 +232,15 @@ class CleanAggregatorHandler(webapp.RequestHandler):
     def get(self):
       dateCheck = date.today() - timedelta(days=2)
       dateCheck = dateCheck.isoformat()
-      logging.info("Running the cleaner or the aggregation table... %s" % dateCheck)
+      logging.info("Running the cleaner for the aggregation table... %s" % dateCheck)
       q = db.GqlQuery("SELECT * FROM BusStopAggregation WHERE dateAdded < DATE(:1)", dateCheck)
-      cleanerQuery = q.fetch(500)
+      cleanerQuery = q.fetch(100)
       msg = 'empty message'
       while len(cleanerQuery) > 0:
           msg = "getting ready to delete %s records!" % len(cleanerQuery)
           logging.debug(msg)
           db.delete(cleanerQuery)
-          cleanerQuery = q.fetch(500)
+          cleanerQuery = q.fetch(100)
 
       self.response.out.write(msg)
       return
