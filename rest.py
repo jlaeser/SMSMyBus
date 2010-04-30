@@ -132,17 +132,17 @@ def buildXMLResponse(textBody, routeID, stopID):
       tstamp_label = "pm" if ltime_hour > 11 else "am"
       xml += '<timestamp>'+tstamp_hour+':'+tstamp_min+tstamp_label+'</timestamp>'
       
-      xml += '<estimates>'
       for t in tlist:
           logging.debug("convert %s" % t)
           
           if t.find(':') > -1:
               # parse aggregated data
               if t.find('Route') > -1:
+                  xml += '<route>'
                   m = re.search('Route\s+([0-9]+)\s+([0-9]+):([0-9]+)',t)
                   if m is None:
                       logging.error("no match for the route timing data!?!")
-                      xml += '</estimates></SMSMyBusResponse>'
+                      xml += '</route></SMSMyBusResponse>'
                       return
                   else:
                       logging.debug("found groupings %s" % m.group(0))
@@ -152,38 +152,58 @@ def buildXMLResponse(textBody, routeID, stopID):
               
                   #logging.debug("results of RE... %s" % m.groups())
                   # pull out the routeID
-                  routeID = m.group(1)
+                  routeID = m.group(1).lstrip('0')
+                  xml += '<routeID>'+routeID+'</routeID>'
               
                   # pull out the qualifiers                  
                   direction = t.split('toward ')[1]
                   logging.debug("found direction %s" % direction)
                   
                   # pull out the time
-                  btime_hour = int(m.group(2))
+                  btime_hour = arrival_hour = int(m.group(2))
                   btime_min = int(m.group(3))
+                  
+                  # determine whether we're in the morning or afternoon
+                  # - adjust hours accordingly
+                  # - determine meta data for human readable form
                   if t.find('pm') > -1:
                       btime_hour += 12 if btime_hour < 12 else 0
+                      arrival_meta = 'pm'
+                  else:
+                      arrival_meta = 'am'
  
                   delta_in_min = (btime_hour*60 + btime_min) - ltime_min
-                  xml += '<minutes>' + routeID + ' in ' + str(delta_in_min) + ' toward ' + direction + '</minutes>'
+                  xml += '<human>Route '+routeID+' toward '+direction+' arrives in '+str(delta_in_min)+' minutes</human>'
+                  xml += '<minutes>'+str(delta_in_min)+'</minutes>'
+                  xml += '<arrivalTime>'+str(arrival_hour)+':'+m.group(3)+arrival_meta+'</arrivalTime>'
+                  xml += '<destination>'+direction+'</destination>'
+                  
+                  xml += '</route>'
               else:
                   # parse single route data
                   
                   # pull out the time
-                  btime_hour = int(t.split(':')[0])
+                  btime_hour = arrival_hour = int(t.split(':')[0])
                   if t.find('pm') > -1:
                       t = t.replace('pm','')
                       btime_hour += 12 if btime_hour < 12 else 0
+                      arrival_meta = 'pm'
                   else:
                       t = t.replace('am','')
- 
+                      arrival_meta = 'am'
+                       
                   btime_min = int(t.split(':')[1])
                   delta_in_min = (btime_hour*60 + btime_min) - ltime_min
+                  xml += '<route>'
+                  xml += '<routeID>'+routeID.lstrip('0')+'</routeID>'
                   xml += '<minutes>' + str(delta_in_min) + '</minutes>'
+                  xml += '<arrivalTime>'+str(arrival_hour)+':'+str(btime_min)+arrival_meta+'</arrivalTime>'
+                  xml += '<destination> </destination>'
+                  xml += '</route>'
                   
 
               
-      xml += '</estimates></SMSMyBusResponse>'
+      xml += '</SMSMyBusResponse>'
       return xml
   
 ## end buildXMLResponse()
