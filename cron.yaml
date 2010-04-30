@@ -5,9 +5,9 @@ cron:
 
 - description: fetch web service data by stop
   url: /rest/prefetch/1878/
-  schedule: every 2 minutes
+  schedule: every 1 minutes
 
 - description: fetch web service data by stop
   url: /rest/prefetch/1505/
-  schedule: every 2 minutes
+  schedule: every 1 minutes
   
