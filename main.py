@@ -264,8 +264,13 @@ class AggregationSMSHandler(webapp.RequestHandler):
       textBody = ''
       logging.debug("Time to report back to %s on results for %s..." % (phone,sid))
       
+      # if this request is via email or is the prefetcher, grab multiple results
+      num_records = 4
+      if phone.find('@') > -1 or phone.find('prefetch') > -1:
+          num_records = 10
+          
       q = db.GqlQuery("SELECT * FROM BusStopAggregation WHERE sid = :1 ORDER BY time", sid)
-      routeQuery = q.fetch(4)
+      routeQuery = q.fetch(num_records)
       if len(routeQuery) > 0:
           stopID = routeQuery[0].stopID
           textBody = "Stop %s\n" % routeQuery[0].stopID
