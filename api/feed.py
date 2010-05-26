@@ -10,9 +10,12 @@ from google.appengine.api.urlfetch import DownloadError
 from google.appengine.api.labs import taskqueue
 from google.appengine.api.labs.taskqueue import Task
 from google.appengine.ext import webapp
+from google.appengine.ext import db
 
 from google.appengine.runtime import apiproxy_errors
 import bus
+
+FEED_VERSION = "1.0"
 
 class StopRequestHandler(webapp.RequestHandler):
     
@@ -36,6 +39,81 @@ class StopRequestHandler(webapp.RequestHandler):
       self.response.out.write(xml)
         
 ## end StopRequestHandler
+        
+class GetAllStopLocationsHandler(webapp.RequestHandler):
+    def get(self):
+        logging.info("fetching the all-stop feed")
+        
+        xml = '<feed v="'+FEED_VERSION+'">'
+        q = db.GqlQuery("SELECT * FROM StopLocation")
+        stops = q.fetch(1000)
+        curs = q.cursor()
+        while stops is not None:
+            for sl in stops:
+                entry = "<stop><id>"+sl.stopID+"</id><intersection>"+sl.intersection+"</intersection><location>"+str(sl.location)+"</location></stop>"
+                logging.info("stop... %s" % entry) 
+                xml += entry
+            stops = q.with_cursor(curs)
+            curs = q.cursor()
+        xml += "</feed>"
+        self.response.headers['Content-Type'] = 'text/xml'
+        self.response.out.write(xml)
+        
+## end GetAllStopLocationsHandler
+
+class GetStopLocationHandler(webapp.RequestHandler):
+    def get(self,stopID=""):
+        logging.info("fetching the stop location feed for STOP %s" % stopID)
+        
+        xml = '<feed version="'+FEED_VERSION+'">'
+        q = db.GqlQuery("SELECT * FROM StopLocation WHERE stopID = :1", stopID)
+        stops = q.fetch(100)
+        if stops is None:
+            xml += "<status>Invalid stop ID specified</status>"
+        else:
+            for sl in stops:
+                entry = "<stop><id>"+sl.stopID+"</id><intersection>"+sl.intersection.replace('&','/')+"</intersection><location>"+str(sl.location)+"</location></stop>"
+                logging.info("stop... %s" % entry) 
+                xml += entry
+        
+        xml += "</feed>"
+        self.response.headers['Content-Type'] = 'text/xml'
+        self.response.out.write(xml)
+        
+## end GetStopLocationHandler
+
+class GetRouteStopsHandler(webapp.RequestHandler):
+    def get(self,routeID=""):
+        logging.info("fetching the stop location feed for ROUTE %s" % routeID)
+        
+        xml = '<feed version="'+FEED_VERSION+'"><route><id>'+routeID+'</id></route>'
+        q = db.GqlQuery("SELECT * FROM RouteListing WHERE route = :1", routeID)
+        stops = q.fetch(200)
+        if stops is None:
+            xml += "<status>Invalid route ID specified</status>"
+        else:
+            for s in stops:
+                sl = s.stopLocation
+                stopID = s.stopID
+                direction = bus.getDirectionLabel(s.direction)
+                
+                if sl is None:
+                    intersection = "unknown"
+                    location = "unknown"
+                else:
+                    intersection = sl.intersection.replace('&','/')
+                    location = str(sl.location)
+                
+                entry = "<stop><id>"+stopID+"</id><intersection>"+intersection+"</intersection><location>"+location+"</location><direction>"+direction+"</direction></stop>"
+                logging.info("stop... %s" % entry) 
+                xml += entry
+        
+        xml += "</feed>"
+        self.response.headers['Content-Type'] = 'text/xml'
+        self.response.out.write(xml)
+
+## end GetRouteStopsHandler
+
         
 class RouteRequestHandler(webapp.RequestHandler):
     
@@ -71,29 +149,7 @@ class RouteRequestHandler(webapp.RequestHandler):
 ## end RequestHandler
 
 
-class PrefetchHandler(webapp.RequestHandler):
-    
-    def get(self, stopID=""):
-	  # don't run these jobs during "off" hours
-      ltime = time.localtime()
-      ltime_hour = ltime.tm_hour - 5
-      ltime_hour += 24 if ltime_hour < 0 else 0
-      if ltime_hour > 1 and ltime_hour < 6:
-	      self.response.out.write('offline')
-	      return
-      
-      # validate the request parameters
-      if len(stopID) == 0:
-        logging.info("Illegal prefetch request with stop (%s)" % stopID)
-        return
 
-      # assume single argument requests are for a bus stop
-      sid = stopID + ":" + str(time.time())
-      caller = "prefetch:" + stopID
-      bus.aggregateBuses(stopID,sid,caller)
-      return      
-          
-## end PrefetchHandler
 
 def postResults(sid, caller, textBody):
     
@@ -212,37 +268,17 @@ def buildXMLResponse(textBody, routeID, stopID):
   
 ## end buildXMLResponse()
 
-class TestHandler(webapp.RequestHandler):
-    def get(self):
-        #t = 'Stop 1878'
-        t = 'Route 04  7:44 am toward STP'
-        m = re.search('([0-9]+):([0-9]+)',t)
-        #r = re.compile('([0-9]+):([0-9]+)')
-        #m = r.search(t)
-        
-        xml=''
-        if m is None:
-            xml = "no match"
-        else:
-            logging.debug("match... %s" % m)
-        
-            btime_hour = int(m.group(1))
-            logging.debug("found hours %s" % btime_hour)
-            btime_min = int(m.group(2))
-            logging.debug("found minutes %s" % btime_min)
-            delta_in_min = (btime_hour*60+btime_min) - 0
-            xml += '<minutes>' + str(delta_in_min) + '</minutes>'
-        
-        self.response.out.write(xml)
-    
-## end TestHandler
 
 def main():
-  logging.getLogger().setLevel(logging.ERROR)
-  application = webapp.WSGIApplication([('/rest/prefetch/(.*)/', PrefetchHandler),
-                                        ('/rest/test/', TestHandler),
-                                        ('/rest/(.*)/(.*)/', RouteRequestHandler),
-                                        ('/rest/(.*)/', StopRequestHandler),
+  logging.getLogger().setLevel(logging.INFO)
+  #
+  # feed handles use the following model...
+  #
+  # http://www.smsmybus.com/feed/<feed-version>/<dev-key>/<routeID>/<stopID>/
+  #
+  application = webapp.WSGIApplication([('/api/allstops/', GetAllStopLocationsHandler),
+                                        ('/api/stops/(.*)/', GetRouteStopsHandler),
+                                        ('/api/location/(.*)/', GetStopLocationHandler),
                                         ],
                                        debug=True)
   wsgiref.handlers.CGIHandler().run(application)

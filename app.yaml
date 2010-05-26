@@ -1,10 +1,11 @@
 application: smsmybus
-version: 9
+version: 12
 runtime: python
 api_version: 1
 
 inbound_services:
 - mail
+- xmpp_message
 
 handlers:
 
@@ -12,6 +13,10 @@ handlers:
   static_files: index.html
   upload: index.html
 
+- url: /motherfools
+  static_files: motherfools/index.html
+  upload: motherfools/index.html
+  
 - url: /dashboard
   static_files: dashboard.html
   upload: dashboard.html
@@ -41,9 +46,13 @@ handlers:
   upload: robots.txt
 
 - url: /crawlingtask
-  script: main.py
+  script: crawl/crawler.py
   login: admin
 
+- url: /crawlinggeotask
+  script: crawl/crawler.py
+  login: admin
+  
 - url: /loggingtask
   script: main.py
   login: admin
@@ -53,7 +62,11 @@ handlers:
   login: admin
   
 - url: /configure
-  script: main.py
+  script: crawl/crawler.py
+  login: admin
+    
+- url: /configuregeo
+  script: crawl/crawler.py
   login: admin
     
 - url: /cleandb
@@ -89,6 +102,23 @@ handlers:
 - url: /rest/.*
   script: rest.py
 
+#
+# API access
+- url: /api/
+  static_files: api/index.html
+  upload: api/index.html
+  
+- url: /api/style.css
+  static_files: api/style.css
+  upload: api/style.css
+  
+- url: /api/(.*)
+  static_files: api/\1
+  upload: api/(.*)
+
+- url: /api/1.0/.*
+  script: api/feed.py
+  
 #
 # catch all...
 #

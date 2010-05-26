@@ -1,0 +1,173 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html>
+  <head>
+    <meta name="description" content="A telephone application that lets you check Madison bus schedules in real time.">
+    <meta name="keywords" content"Twilio, bus schedule, SMS, madison, metro, API, developer, mymetro, mymetrobus, google app engine, cloud computing, telephone, telephony, smsmybus">
+    <meta name="google-site-verification" content="H9cmKbLovDFqlBKn-lLv7ojvKOQ599AKKsJ7QgrM1fA" />
+    <title>SMSMyBus - Check the bus schedule in real time</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="prettify.css" type="text/css" rel="stylesheet" />
+    <script type="text/javascript" src="prettify.js"></script>
+  </head>
+
+<body onload="prettyPrint()">  
+
+<div id="page-container">
+ <div id="header">
+ SMSMyBus API
+ </div>
+ <div id="description">
+  SMSMyBus exposes its data via a programming interface. This page describes that interface.
+ </div>
+ <div id="menu">
+ <ul>
+  <li><a href=/api/>API Home</a></li>
+  <li class="selected"><a href=/api/schedule.html>Schedules</a></li>
+  <li><a href=/api/routes.html>Routes</a></li>
+  <li><a href=/api/locations.html>Locations</a></li>
+  <li><a href=/api/notifications.html>Notifications</a></li>
+ </ul>
+ </div>
+ This portion of the web service describes scheduling information. Under <strong>all</strong> circumstances, this is 
+ predictive data. It is based on the real-time information described by the Metro system for each route - not fixed
+ schedule information.
+ <hr>
+ <h1>getarrivals</h1>
+ <div id="spec">
+ <h3>Overview</h3>
+ The getarrivals method will return real-time arrival estimates for the next <i>N</i> buses at a specified stop.
+ Several filters can be applied to narrow the results.
+ <h3>URL</h3>
+ http://www.smsmybus.com/api/v1/getarrivals
+ <h3>Fields</h3>
+ <table>
+ <tr>
+  <th style="width:120px;">Name</th>
+  <th style="width:150px;">Value</th>
+  <th>Description</th>
+ </tr>
+ <tr>
+  <td class="center">key</td>
+  <td class="center">String (required)</td>
+  <td>16-digit API access key</td>
+ </tr>
+ <tr class="striped">
+  <td class="center">stopID</td>
+  <td class="center">String</td>
+  <td>A four-digit value describing a valid stop in the Metro system.</td>
+ </tr>
+ <tr>
+  <td class="center">routeID</td>
+  <td class="center">String</td>
+  <td>A two-digit value describing a valid route in the Metro system.</td>
+ </tr>
+ <tr class="striped">
+  <td class="center">busID</td>
+  <td class="center">String</td>
+  <td>A three-digit value describing a valid bus in the Metro system.</td>
+ </tr>
+ </table>
+ <h3>Examples</h3>
+ Retrieve the arrival estimates for all buses traveling through stop 1101:<p> </p>
+ <span style="font-weight:bold;margin-left:24px;">http://www.smsmybus.com/api/v1/getarrivals?key=xxx&stopID=1101</span><p> </p>
+ Retrieve the arrival estimates for route 19 buses traveling through stop 1101:<p> </p>
+ <span style="font-weight:bold;margin-left:24px;">http://www.smsmybus.com/api/v1/getarrivals?key=xxx&stopID=1101&routeID=19</span><p> </p>
+ Retrieve the arrival estimates for future stops of the route 19 bus identifies as #915:<p> </p>
+ <span style="font-weight:bold;margin-left:24px;">http://www.smsmybus.com/api/v1/getarrivals?key=xxx&routeID=19&busID=915</span>
+ <h3>Response</h3>
+ The response length is dependent on the particular request parameters. If the status field is 0, the response
+ will be grouped by stop and each stop will be grouped by routes traveling through the respective stop.
+ <p> </p>
+<code class="prettyprint lang-xml">
+&lt;?xml version=”1.0”?&gt;
+  &lt;SMSMyBusResponse&gt;
+    &lt;status&gt;0&lt;/status&gt;
+    &lt;timestampe&gt;12:38pm&lt;/timestamp&gt;
+    &lt;stop&gt;
+      &lt;stopID&gt;1101&lt;/stopID&gt;
+      &lt;route&gt;
+        &lt;routeID&gt;4&lt;/routeID&gt;
+        &lt;human&gt;Route 4 toward STP arrives in 10 minutes&lt;/human&gt;
+        &lt;minutes&gt;10&lt;/minutes&gt;
+        &lt;arrivalTime&gt;12:44pm&lt;/arrivalTime&gt;
+        &lt;destination&gt;STP&lt;/destination&gt;
+      &lt;/route&gt;
+      &lt;route&gt;
+        &lt;routeID&gt;3&lt;/routeID&gt;
+        &lt;human&gt;Route 3 toward ETP arrives in 12 minutes&lt;/human&gt;
+        &lt;minutes&gt;12&lt;/minutes&gt;
+        &lt;arrivalTime&gt;12:46pm&lt;/arrivalTime&gt;
+        &lt;destination&gt;ETP&lt;/destination&gt;
+      &lt;/route&gt;
+      ...
+      ...
+    &lt;/stop&gt;
+    &lt;stop&gt;
+      &lt;stopID&gt;1787&lt;/stopID&gt;
+      &lt;route&gt;
+        &lt;routeID&gt;4&lt;/routeID&gt;
+        &lt;human&gt;Route 4 toward STP arrives in 12 minutes&lt;/human&gt;
+        &lt;minutes&gt;12&lt;/minutes&gt;
+        &lt;arrivalTime&gt;12:46pm&lt;/arrivalTime&gt;
+        &lt;destination&gt;STP&lt;/destination&gt;
+      &lt;/route&gt;
+      &lt;route&gt;
+        &lt;routeID&gt;3&lt;/routeID&gt;
+        &lt;human&gt;Route 3 toward ETP arrives in 14 minutes&lt;/human&gt;
+        &lt;minutes&gt;14&lt;/minutes&gt;
+        &lt;arrivalTime&gt;12:48pm&lt;/arrivalTime&gt;
+        &lt;destination&gt;ETP&lt;/destination&gt;
+      &lt;/route&gt;
+      ...
+      ...
+    &lt;/stop&gt;
+    ...
+    ...
+  &lt;/SMSMyBusResponse&gt;
+</code>
+ <h3>Error</h3>
+ An error is indicated by a non-zero status value. If the status value is non-zero, the description field will be 
+ present describing the error in plain English.
+ <p> </p>
+<code class="prettyprint lang-xml">
+&lt;?xml version=”1.0”?&gt;
+  &lt;SMSMyBusResponse&gt;
+    &lt;status&gt;-1&lt;/status&gt;
+    &lt;description&gt;Invalid request parameters&lt;/description&gt;	
+  &lt;/SMSMyBusResponse&gt;
+</code>
+ </div>
+ <div id="spacer"></div>
+ <hr>
+ <div id="footer">
+  <div id="powered-by">
+     powered by:<br><br>
+     <a href=http://code.google.com/appengine/><img src="/img/gae-logo.png" alt="google app engine" height="30" width="30"></a>
+  </div>
+  <div id="me">
+   <a href=http://www.gregtracy.com>Greg Tracy</a> - <a href=http://twitter.com/gregtracy>@gregtracy</a>
+  </div>
+  <div id="contact-container">
+   terms - privacy - <a href="mailto:greg@gregtracy.com?subject=SMSMyBus%20feedback">feedback</a>
+  </div>
+ </div>
+</div>
+
+
+
+<script type="text/javascript">
+var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+</script>
+<script type="text/javascript">
+try {
+var pageTracker = _gat._getTracker("UA-2237321-13");
+pageTracker._trackPageview();
+} catch(err) {}</script>
+
+  </body>
+</html>
+

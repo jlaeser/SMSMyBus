@@ -45,3 +45,10 @@ indexes:
   - name: sid
   - name: time
   - name: dateAdded
+  
+- kind: BusStopAggregation
+  properties:
+  - name: routeID
+  - name: stopID
+  - name: dateAdded
+    direction: desc
