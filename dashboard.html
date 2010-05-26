@@ -6,7 +6,6 @@
   <head>
     <meta name="description" content="A telephone application that lets check Madison bus schedules in real time.">
     <meta name="keywords" content"Twilio, bus schedule, SMS, google app engine, cloud computing, telephone, telephony, smsmybus">
-    <meta name="google-site-verification" content="LlRh5UtRxlnPU9V4FSBWx2JU2TBAdRMl-rTcsC6Px7c" />
     <title>SMSMyBuss - Check the bus schedule in real time</title>
     <link rel="stylesheet" href="style.css">
 
@@ -15,7 +14,7 @@
 
     <script type="text/javascript">
       function refreshTimes() {
-    	  var customurl = "/rest/"+$('#route').val()+"/"+$('#stop').val()+"/";
+    	  var customurl = "/rest/"+$('#stop').val()+"/";
            $.ajax({
             type: "GET",
             url: customurl,
@@ -23,18 +22,27 @@
             success: function(xml) {
       	      if($("status",xml).text() == "-1") {
           	   $("#estimates").replaceWith('<p id="estimates" style="color:red;font-weight: bold">Error retrieving that route/stop combination!</p>');
-          	   //alert("Illegal request");
+          	   alert("Illegal request");
       	      }
       	      else {
-          	   routeID = $("route",xml).text();
-          	   stopID = $("stop",xml).text();
-          	   $("#estimates").replaceWith('<p id="estimates">Route '+routeID+', Stop '+stopID+' will be arriving in...<br><br>')
-      	       timestamp = $("timestamp",xml).text();
-      	       $("minutes",xml).each(function(id) {  
-      	          time = $(this).text();
-      	          $("#estimates").append(time+" minutes<br/>");  
-        	      });
-     	       $("#estimates").append('<p style="font-size: 12px;">(as of '+timestamp+')</p>');
+          	   var stopID = $("stop",xml).text();
+      	       var timestamp = $("timestamp",xml).text();
+      	       $("route",xml).each(function(id) {
+          	       var routeID = $(this).find('routeID').text();
+          	       var human = $(this).find('human').text();
+          	       var minutes = $(this).find('minutes').text();
+          	       var arrival = $(this).find('arrivalTime').text();
+          	       var destination = $(this).find('destination').text();
+          	       //alert(human);
+          	       $("#estimates").append("Route "+routeID+" arrives in "+minutes+" minutes<br/>");
+      	       });
+      	       
+          	   //$("#estimates").replaceWith('<p id="estimates">Route '+routeID+', Stop '+stopID+' will be arriving in...<br><br>')
+      	       //$("minutes",xml).each(function(id) {  
+      	          //time = $(this).text();
+      	          //$("#estimates").append(time+" minutes<br/>");  
+        	      //});
+     	       //$("#estimates").append('<p style="font-size: 12px;">(as of '+timestamp+')</p>');
       	      }   
             } // success function
           }); // .ajax
@@ -72,10 +80,6 @@
  <div id="query-form">
     <form id="request-form" onsubmit="return false">
      <table border=0>
-      <tr>
-      <td>Route (bus) ID:</td>
-      <td><input id="route" type=text size=5 name="route"></p></td>
-      </tr>
       <tr>
       <td>Stop ID:</td>
       <td><input id="stop" type=text size=5 name="stop"></td>

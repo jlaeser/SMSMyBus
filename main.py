@@ -8,6 +8,7 @@ from datetime import timedelta
 import time
 
 from google.appengine.api import mail
+from google.appengine.api import xmpp
 from google.appengine.api import quota
 from google.appengine.api import urlfetch
 from google.appengine.api import memcache
@@ -24,7 +25,6 @@ from google.appengine.runtime import apiproxy_errors
 
 import twilio
 import twitter
-import crawler
 import bus
 import rest
 
@@ -41,9 +41,6 @@ API_VERSION = '2008-08-01'
 CALLER_ID = '6084671603'
 #CALLER_ID = '4155992671'
 
-URLBASE = "http://webwatch.cityofmadison.com/webwatch/ada.aspx?"
-CRAWL_URLBASE = "http://webwatch.cityofmadison.com/webwatch/Ada.aspx"
-
 class MainHandler(webapp.RequestHandler):
 
   def post(self):
@@ -57,8 +54,61 @@ class MainHandler(webapp.RequestHandler):
       
 ## end MainHandler()
 
+class XmppHandler(webapp.RequestHandler):
+    
+    def post(self):
+      message = xmpp.Message(self.request.POST)
+      logging.info("XMPP request! Sent form %s with message %s" % (message.sender,message.body))
+      if message.body[0:5].lower() == 'hello':
+          message.reply("hey there!")
+
+      # there are two valid formats for requests
+      # <route> <stop id> : returns the next bus for that stop
+      # <stop id> : returns the next N buses for that stop
+      #
+      body = message.body
+      requestArgs = body.split()
+      if len(requestArgs) == 1:
+          if body.isdigit() == False:
+              message.reply("hmm. not sure what this is. try sending just the bus stop (e.g. 1878) or a route and bus stop (e.g. 3 1878)")
+              return
+          # assume single argument requests are for a bus stop
+          sid = message.sender + str(time.time())
+          bus.aggregateBuses(body,sid,message.sender)
+          message.reply("got it... give me a minute to look that one up for you.")
+      else:
+          # pull the route and stopID out of the request body and
+          # pad it with a zero on the front if the message forgot 
+          # to include it (that's how they are stored in the DB)
+          routeID = body.split()[0]
+          if len(routeID) == 1:
+            routeID = "0" + routeID
+ 
+          stopID = body.split()[1]
+          if len(stopID) == 3:
+            stopID = "0" + stopID
+    
+          if routeID.isdigit() == False or stopID.isdigit() == False:
+              message.reply("hmm. not sure what this is. try sending just the bus stop (e.g. 1878) or a route and bus stop (e.g. 3 1878)")
+              return
+          textBody = bus.findBusAtStop(routeID,stopID)    
+      
+          # create an event to log the event
+          task = Task(url='/loggingtask', params={'phone':message.sender,
+                                                  'inboundBody':body,
+                                                  'sid':'xmpp',
+                                                  'outboundBody':textBody,})
+          task.add('phonelogger')
+
+          # reply to the chat request
+          message.reply(textBody)
+
+## end XmppHandler()
+
+
 class EmailRequestHandler(webapp.RequestHandler):
     def post(self):
+      logging.info("Processing inbound email request... %s" % self.request)
       message = mail.InboundEmailMessage(self.request.body)
       logging.info("Email request! Sent from %s with message subject %s" % (message.sender,message.subject))
       
@@ -73,31 +123,27 @@ class EmailRequestHandler(webapp.RequestHandler):
           # assume single argument requests are for a bus stop
           sid = message.sender + str(time.time())
           bus.aggregateBuses(body,sid,message.sender)
-          return
-
-      # pull the route and stopID out of the request body and
-      # pad it with a zero on the front if the message forgot 
-      # to include it (that's how they are stored in the DB)
-      routeID = body.split()[0]
-      if len(routeID) == 1:
-        routeID = "0" + routeID
+      else:
+          # pull the route and stopID out of the request body and
+          # pad it with a zero on the front if the message forgot 
+          # to include it (that's how they are stored in the DB)
+          routeID = body.split()[0]
+          if len(routeID) == 1:
+            routeID = "0" + routeID
  
-      stopID = body.split()[1]
-      if len(stopID) == 3:
-        stopID = "0" + stopID
+          stopID = body.split()[1]
+          if len(stopID) == 3:
+            stopID = "0" + stopID
     
-      textBody = bus.findBusAtStop(routeID,stopID)    
+          textBody = bus.findBusAtStop(routeID,stopID)    
+          sendEmailResponse(message.sender, textBody)
       
-      # create an event to log the event
-      task = Task(url='/loggingtask', params={'phone':message.sender,
-                                              'inboundBody':message.bodies('text/plain'),
-                                              'sid':'email',
-                                              'outboundBody':textBody,})
-      task.add('phonelogger')
-
-      sendEmailResponse(message.sender, textBody)
-            
-      return
+          # create an event to log the event
+          task = Task(url='/loggingtask', params={'phone':message.sender,
+                                                  'inboundBody':message.bodies('text/plain'),
+                                                  'sid':'email',
+                                                  'outboundBody':textBody,})
+          task.add('phonelogger')
         
 ## end EmailRequestHandler
     
@@ -280,9 +326,12 @@ class AggregationSMSHandler(webapp.RequestHandler):
           logging.error("We couldn't find this SMS transaction information %s. Chances are there aren't any matches with the request." % sid)
           textBody = "Doesn't look good... Your bus isn't running right now!"
         
-      if phone.find('@') > -1:
+      if phone.find('@') > -1 and phone.find('/') > -1:
+          # assuming that this is an XMPP request - not SMS
+          sendXmppResponse(phone, textBody)
+      elif phone.find('@') > -1:
           # assuming that this is an email request - not SMS
-          sendEmailResponse(phone, textBody)
+          sendEmailResponse(phone, textBody)          
       elif phone.find('prefetch') > -1:
           # assuming that this is a prefetch request - not SMS
           rest.postResults(sid, phone, textBody)
@@ -436,6 +485,17 @@ def sendEmailResponse(email, textBody):
     message.subject = 'Your Metro schedule estimates'
     message.body = header + textBody + footer
     message.send()
+
+## end sendEmailResponse()
+
+
+def sendXmppResponse(user, textBody):
+    
+    xmpp.send_message(user,textBody)
+    return
+
+## end sendXmppResponse()
+
             
 def main():
   logging.getLogger().setLevel(logging.INFO)
@@ -443,11 +503,10 @@ def main():
                                         ('/request', RequestHandler),
                                         ('/dashboard/(.*)/(.*)', DashboardHandler),
                                         ('/_ah/mail/.+', EmailRequestHandler),
-                                        ('/configure', crawler.CrawlerHandler),
+                                        ('/_ah/xmpp/message/chat/', XmppHandler),
                                         ('/cleandb', CleanAggregatorHandler),
                                         ('/aggregationtask', AggregationHandler),
                                         ('/aggregationSMStask', AggregationSMSHandler),
-                                        ('/crawlingtask', crawler.CrawlingTaskHandler),
                                         ('/loggingtask', PhoneLogEventHandler),
                                         ('/sendsmstask', SendSMSHandler)
                                         ],
