@@ -154,7 +154,6 @@ def buildXMLResponse(textBody, routeID, stopID):
                       logging.debug("found hour %s" % m.group(2))
                       logging.debug("found minutes %s" % m.group(3))
               
-                  #logging.debug("results of RE... %s" % m.groups())
                   # pull out the routeID
                   routeID = m.group(1).lstrip('0')
                   xml += '<routeID>'+routeID+'</routeID>'

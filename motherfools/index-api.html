@@ -1,0 +1,380 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-GB">
+<head>
+    <meta name="description" content="A telephone application that checks Madison bus schedules in real time.">
+    <meta name="keywords" content"Twilio, bus schedule, SMS, google app engine, cloud computing, telephone, telephony, smsmybus">
+    <title>Mother Fools Madison Metro Monitor by SMSmybus</title>
+
+	<meta http-equiv="Content-Type" content="application/xhtml+xml; charset=utf-8" />
+	<meta name="robots" content="index, follow" />
+	<link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
+	<style media="screen" type="text/css">
+	/* <!-- */
+	/* General styles */
+	body {
+		margin:0;
+		padding:0;
+		border:0;			/* This removes the border around the viewport in old versions of IE */
+		width:100%;
+      background-color: #222233;
+		min-width:600px;    	/* Minimum width of layout - remove line if not required */
+						/* The min-width property does not work in old versions of Internet Explorer */
+		font-size:55px;
+		font-family: Arial;
+		color: white;
+	}
+	a {
+      text-decoration: none;
+      color: #eeeeff;
+	}
+   a img {
+     border: 0px;
+   }
+	a:hover {
+		color:#fff;
+		text-decoration:none;
+	}
+   a:visited {
+     color: #eeeeff;
+   }
+	h1, h2, h3 {
+		margin:.8em 0 .2em 0;
+		padding:0;
+	}
+	p {
+		margin:.4em 0 .8em 0;
+		padding:0;
+	}
+	img {
+		margin:10px 0 5px;
+	}
+	/* Header styles */
+	#header {
+		clear:both;
+		float:left;
+		width:100%;
+		font-style: italic;
+		text-align: center;
+	}
+	
+	#clock {
+	    clear: none;
+	    float: right;
+	    padding-right: 25px;
+	}
+	
+	#header {
+		border-bottom:1px solid #000;
+	}
+	#header p,
+	#header h1,
+	#header h2 {
+		padding:.4em 15px 0 15px;
+		margin:0;
+	}
+	#header ul {
+		clear:left;
+		float:left;
+		width:100%;
+		list-style:none;
+		margin:10px 0 0 0;
+		padding:0;
+	}
+	#header ul li {
+		display:inline;
+		list-style:none;
+		margin:0;
+		padding:0;
+	}
+	#header ul li a {
+		display:block;
+		float:left;
+		margin:0 0 0 1px;
+		padding:3px 10px;
+		text-align:center;
+		text-decoration:none;
+		position:relative;
+		left:15px;
+		line-height:1.3em;
+	}
+	#header ul li a:hover {
+		color:#fff;
+	}
+	#header ul li a.active,
+	#header ul li a.active:hover {
+		color:#fff;
+		font-weight:bold;
+	}
+	#header ul li a span {
+		display:block;
+	}
+	/* 'widths' sub menu */
+	#layoutdims {
+		clear:both;
+		border-top:4px solid #000;
+		margin:0;
+		padding:6px 15px !important;
+		text-align:right;
+	}
+	/* column container */
+	.colmask {
+		clear:both;
+		float:left;
+		width:100%;			/* width of whole page */
+		overflow:hidden;		/* This chops off any overhanging divs */
+	}
+	/* common column settings */
+	.colright,
+	.colmid,
+	.colleft {
+		float:left;
+		width:100%;
+		position:relative;
+	}
+	.col1,
+	.col2,
+	.col3 {
+		float:left;
+		position:relative;
+		padding:0 0 1em 0;
+		overflow:hidden;
+	}
+	/* 2 Column (double page) settings */
+	.doublepage {
+		background:#223333;		/* right column background colour */
+	}
+	.doublepage .colleft {
+		right:50%;			/* right column width */
+		background:#332233;		/* left column background colour */
+	}
+	.doublepage .col1 {
+		width:46%;			/* left column content width (column width minus left and right padding) */
+		left:52%;			/* right column width plus left column left padding */
+	}
+	.doublepage .col2 {
+		width:46%;			/* right column content width (column width minus left and right padding) */
+		left:56%;			/* (right column width) plus (left column left and right padding) plus (right column left padding) */
+	}
+	/* Footer styles */
+	#footer {
+		clear:both;
+		float:left;
+		width:100%;
+		border-top:1px solid #000;
+		font-size: 20px;
+		color: #888888
+	}
+	#footer p {
+		padding: 10px 150px 2px 150px;
+		margin:0;
+	}
+
+.direction {
+    font-size: 50px;
+    text-align: center;
+}
+
+.subhead {
+	font-size: 17px;
+	color: #888888;
+}
+
+.arrival {
+	font-size: 25px;
+	color: #888888;
+}
+
+.coming-soon {
+}
+
+.coming-soon .route-label {
+   font-size: 4.5em;
+}
+
+.route-label {
+	font-size: 3.25em;
+	color: white;
+}
+
+.destination-abbrev {
+	font-size: 1.5em;
+	color: white;
+	font-style: italic;
+}
+
+.destination-text {
+	font-size: .75em;
+	color: #dddddd;
+	display: none;
+}
+
+.minutes {
+	font-size: 3.25em;
+	color: white;
+}
+
+.coming-soon .minutes {
+   font-size: 4.5em;
+	font-style: italic;
+}
+
+
+#powered-by {
+  font-size: 17px;
+  float: left;
+  padding: 4px;
+}
+
+#contact-container {
+  padding: 4px;
+  font-size: 17px;
+}
+
+#me {
+  float: right;
+  padding: 4px;
+  font-size: 17px;
+}
+
+
+	/* --> */
+	</style>
+
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"></script> 
+    <script type="text/javascript" src="/jquery.timers-1.2.js"></script>
+
+    <script type="text/javascript">
+      function refreshTimes(stopID, Direction) {
+    	  var customurl = "/api/v1/getarrivals?key=nomar&stopID="+stopID;
+           $.ajax({
+            type: "GET",
+            url: customurl,
+            data: "",
+            success: function(xml) {
+      	      if($("status",xml).text() == "-1") {
+          	   $("#"+stopID+"-estimates").replaceWith('<p id="'+stopID+'-estimates" style="color:red;font-weight: bold">Error retrieving stop arrival data!</p>');
+      	      }
+      	      else {
+          	   //routeID = $("route",xml).text();  //oldAPI
+          	   stopDispID = $("stop",xml).text();
+      	      timestamp = $("timestamp",xml).text();
+          	   $("#"+stopID+"-estimates").replaceWith('<div id="'+stopID+'-estimates" class="estimates"><span class="direction">'+Direction+'</span><div class="subhead"> &nbsp; &nbsp; Next buses at Few on Ingersoll per Metro '+timestamp+' estimate</div>');
+          	   i=0; //row index, will be counting numbers      	   
+      	       $("route",xml).each(function(id) {
+          	       var routeID = $(this).find('routeID').text();
+          	       var minutes = $(this).find('minutes').text();
+      	          if (++i>4) {$("#"+stopID+"-estimates").append('<span class="arrival"> ...#'+routeID+' in '+minutes+' min </span>'); return true;} //limit number of rows
+          	       var human = $(this).find('human').text();
+          	       var arrival = $(this).find('arrivalTime').text();
+          	       var destination = $(this).find('destination').text();
+          	       destination = destination.substring(0,12); //limit the length in case of long ones (unknown risk)
+          	       //alert(human);
+          	       //$("#estimates").append("Route "+routeID+" arrives in "+minutes+" minutes<br/>");
+      	          if (minutes<6) {time = '<div class="arrival"><span class="coming-soon">#<span class="route-label">'+routeID+'</span> to <span class="destination-abbrev">'+destination+'</span> in <span class="minutes">'+minutes+'</span> min</span></div><div class="destination-text">'+destination+'</span></div>';}
+      	          else {time = '<div class="arrival">#<span class="route-label">'+routeID+'</span> to <span class="destination-abbrev">'+destination+'</span> in <span class="minutes">'+minutes+'</span> min</span></div><div class="destination-text">'+destination+'</div>';}
+      	          $("#"+stopID+"-estimates").append(time);        	          
+        	      });
+      	      }   
+            } // success function
+          }); // .ajax
+      } // refreshTimes
+      
+      $(document).everyTime("31s",function() {
+          //Note: this is now stupid, make the document.ready call a named function
+          //alert("refresh");
+          updateClock();
+          refreshTimes('1100', '<< Eastbound');
+          //refreshTimes('1505', '<< Eastbound');
+          //refreshTimes('1878', 'Westbound >>');
+	   });
+    </script>
+
+
+    <script type="text/javascript">
+      $(document).ready(function() {
+          updateClock();
+          refreshTimes('1100', '<< Eastbound');
+          //refreshTimes('1505', '<< Eastbound');
+          //refreshTimes('1878', 'Westbound >>');
+      });
+    </script>
+    
+<script type="text/javascript">
+<!--
+
+	function updateClock ( )
+	{
+	  var currentTime = new Date ( );
+	
+	  var currentHours = currentTime.getHours ( );
+	  var currentMinutes = currentTime.getMinutes ( );
+	  var currentSeconds = currentTime.getSeconds ( );
+	
+	  // Pad the minutes and seconds with leading zeros, if required
+	  currentMinutes = ( currentMinutes < 10 ? "0" : "" ) + currentMinutes;
+	  currentSeconds = ( currentSeconds < 10 ? "0" : "" ) + currentSeconds;
+	
+	  // Choose either "AM" or "PM" as appropriate
+	  var timeOfDay = ( currentHours < 12 ) ? "am" : "pm";
+	
+	  // Convert the hours component to 12-hour format if needed
+	  currentHours = ( currentHours > 12 ) ? currentHours - 12 : currentHours;
+	
+	  // Convert an hours component of "0" to "12"
+	  currentHours = ( currentHours == 0 ) ? 12 : currentHours;
+	
+	  // Compose the string for display
+	  var currentTimeString = currentHours + ":" + currentMinutes + " " + timeOfDay;
+	
+	  // Update the time display
+	  document.getElementById("clock").firstChild.nodeValue = currentTimeString;
+	}
+	
+	// -->
+	</script>
+
+
+</head>
+<body>
+
+<div id="header">
+  <img align="center" src="/img/MF-100.png" height="70" width="100" /> Madison Metro Monitor <img align="center" src="/img/madison_metro.png" alt="Madison Metro" height="70">
+  <div id="clock">clock</div>
+</div>
+<div class="colmask doublepage">
+	<div class="colleft">
+		<div class="col1">
+			<!-- Column 1 start -->
+            <div class="estimates" id="1100-estimates">stuff</div>
+			<!-- Column 1 end -->
+
+		</div>
+		<div class="col2">
+			<!-- Column 2 start -->
+           <div class="estimates" id="1878-estimates">stuff</div>
+			<!-- Column 2 end -->
+
+		</div>
+	</div>
+</div>
+<div id="footer">
+<p>This is an experimental effort to offer you real-time bus information while you enjoy your coffee!
+Your feedback on the accuracy and value of the information will help improve the service.</p>
+<p>Special thanks to The City of Madison for great buses and for providing the GPS data that powers this service</p>
+   <div id="powered-by">
+     <img src="/img/madison_metro.png" alt="Madison Metro" height="30" onClick="refreshTimes('1505', 'manual refreshed east')">
+     <img src="http://www.smsmybus.com/img/gae-logo.png" alt="google app engine" height="30" width="30" onClick="refreshTimes('1878', 'manual refreshed west')">
+     <img src="/img/smsmybus.png" alt="smsmybus.com logo" height="30">
+   </div>
+
+   <div id="me">
+    <a href=http://www.gregtracy.com>Greg Tracy - smsmybus</a> - <a href=http://twitter.com/gregtracy>@gregtracy</a><br>
+    <a href=http://imby.info/p/prestonaustin>Preston Austin - this interface</a> - <a href=http://twitter.com/gl33p>@gl33p</a>
+   </div>
+  
+   <div id="contact-container">
+   </div>
+</div>
+
+</body>
+</html>

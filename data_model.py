@@ -15,7 +15,7 @@ class StopLocation(GeoModel):
     intersection = db.StringProperty()
     direction    = db.StringProperty()
 ## end StopLocation    
-    
+
 
 class RouteListing(db.Model):
     route        = db.StringProperty()
@@ -39,3 +39,33 @@ class BusStopAggregation(db.Model):
     sid       = db.StringProperty()
 ## end BusStopAggregation
 
+class LiveRouteStatus(db.Model):
+    dateAdded    = db.DateTimeProperty(auto_now_add=True)
+    routeToken   = db.StringProperty()
+    routeID      = db.StringProperty()
+    stopID       = db.StringProperty()
+    arrivalTime  = db.StringProperty()
+    time         = db.IntegerProperty()
+    intersection = db.StringProperty()
+    direction    = db.StringProperty()
+    stopLocation = db.ReferenceProperty(StopLocation,collection_name="liveroutes")    
+## end LiveRouteStatus
+
+class LiveVehicleStatus(db.Model):
+    dateAdded    = db.DateTimeProperty(auto_now_add=True)
+    routeID      = db.StringProperty()
+    vehicleID    = db.StringProperty()
+    location     = db.GeoPtProperty()
+    direction    = db.StringProperty()
+    nextTimepoint= db.StringProperty()
+## end LiveVehicleStatus
+
+class DeveloperKeys(db.Model):
+    dateAdded      = db.DateTimeProperty(auto_now_add=True)
+    developerName  = db.StringProperty()
+    developerKey   = db.StringProperty()
+    developerEmail = db.EmailProperty()
+    requestCounter = db.IntegerProperty()
+    errorCounter   = db.IntegerProperty()
+
+    

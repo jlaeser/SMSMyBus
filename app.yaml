@@ -1,5 +1,5 @@
 application: smsmybus
-version: 12
+version: 13
 runtime: python
 api_version: 1
 
@@ -16,7 +16,11 @@ handlers:
 - url: /motherfools
   static_files: motherfools/index.html
   upload: motherfools/index.html
-  
+
+- url: /motherfools/index-api.html
+  static_files: motherfools/index-api.html
+  upload: motherfools/index-api.html
+    
 - url: /dashboard
   static_files: dashboard.html
   upload: dashboard.html
@@ -40,18 +44,14 @@ handlers:
 - url: /favicon.ico
   static_files: img/favicon.ico
   upload: img/favicon.ico
-  
+
+- url: /apple-touch-icon.png
+  static_files: img/apple-touch-icon.png
+  upload: img/apple-touch-icon.png
+    
 - url: /robots.txt
   static_files: robots.txt
   upload: robots.txt
-
-- url: /crawlingtask
-  script: crawl/crawler.py
-  login: admin
-
-- url: /crawlinggeotask
-  script: crawl/crawler.py
-  login: admin
   
 - url: /loggingtask
   script: main.py
@@ -61,14 +61,6 @@ handlers:
   script: main.py
   login: admin
   
-- url: /configure
-  script: crawl/crawler.py
-  login: admin
-    
-- url: /configuregeo
-  script: crawl/crawler.py
-  login: admin
-    
 - url: /cleandb
   script: main.py
   login: admin
@@ -103,6 +95,33 @@ handlers:
   script: rest.py
 
 #
+# data CRAWLER access
+#
+- url: /crawl/.*
+  script: crawl/prefetch.py
+  login: admin
+
+- url: /configure
+  script: crawl/crawler.py
+  login: admin
+
+- url: /configuregeo
+  script: crawl/crawler.py
+  login: admin
+  
+- url: /crawlingtask
+  script: crawl/crawler.py
+  login: admin
+  
+- url: /crawlinggeotask
+  script: crawl/crawler.py
+  login: admin
+  
+- url: /routelist/.*
+  script: crawl/crawler.py
+  login: admin
+
+#
 # API access
 - url: /api/
   static_files: api/index.html
@@ -112,12 +131,14 @@ handlers:
   static_files: api/style.css
   upload: api/style.css
   
-- url: /api/(.*)
-  static_files: api/\1
-  upload: api/(.*)
+- url: /api/v1/getarrivals
+  script: api/v1/getarrivals.py
 
-- url: /api/1.0/.*
-  script: api/feed.py
+  
+# drop table
+- url: /droptable/.*
+  script: crawl/crawler.py
+  login: admin
   
 #
 # catch all...

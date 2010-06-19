@@ -30,6 +30,16 @@ hr {
   margin: 0 auto;
 }
 
+#banner {
+	width: 100%;
+	text-align: right;
+	padding-top: 10px;
+}
+#banner a:hover {
+	padding: 4px;
+	background-color: #cccccc;
+}
+
 #header {
   padding-top: 25px;
   font-size: 48px;
