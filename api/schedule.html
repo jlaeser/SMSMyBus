@@ -5,9 +5,9 @@
 <html>
   <head>
     <meta name="description" content="A telephone application that lets you check Madison bus schedules in real time.">
-    <meta name="keywords" content"Twilio, bus schedule, SMS, madison, metro, API, developer, mymetro, mymetrobus, google app engine, cloud computing, telephone, telephony, smsmybus">
+    <meta name="keywords" content"SMSMyBus, Twilio, bus schedule, SMS, madison, metro, API, developer, mymetro, mymetrobus, google app engine, cloud computing, telephone, telephony, smsmybus">
     <meta name="google-site-verification" content="H9cmKbLovDFqlBKn-lLv7ojvKOQ599AKKsJ7QgrM1fA" />
-    <title>SMSMyBus - Check the bus schedule in real time</title>
+    <title>SMSMyBus API - Build your own Madison Metro applications</title>
     <link rel="stylesheet" href="style.css">
     <link href="prettify.css" type="text/css" rel="stylesheet" />
     <script type="text/javascript" src="prettify.js"></script>
@@ -16,6 +16,7 @@
 <body onload="prettyPrint()">  
 
 <div id="page-container">
+ <div id="banner"><a href=/>home</a></div>
  <div id="header">
  SMSMyBus API
  </div>
@@ -62,12 +63,14 @@
  <tr>
   <td class="center">routeID</td>
   <td class="center">String</td>
-  <td>A two-digit value describing a valid route in the Metro system.</td>
+  <td>A two-digit value describing a valid route in the Metro system. 
+  If routeID is specified, either stopID or vehicleID <strong><i>must also</i></strong> be specified in the request.</td>
  </tr>
  <tr class="striped">
-  <td class="center">busID</td>
+  <td class="center">vehicleID</td>
   <td class="center">String</td>
-  <td>A three-digit value describing a valid bus in the Metro system.</td>
+  <td>A three-digit value describing a valid bus vehicle in the Metro system. If vehicleID is specified, 
+  routeID <strong><i>must also</i></strong> be specified in the request.</td>
  </tr>
  </table>
  <h3>Examples</h3>
@@ -76,11 +79,11 @@
  Retrieve the arrival estimates for route 19 buses traveling through stop 1101:<p> </p>
  <span style="font-weight:bold;margin-left:24px;">http://www.smsmybus.com/api/v1/getarrivals?key=xxx&stopID=1101&routeID=19</span><p> </p>
  Retrieve the arrival estimates for future stops of the route 19 bus identifies as #915:<p> </p>
- <span style="font-weight:bold;margin-left:24px;">http://www.smsmybus.com/api/v1/getarrivals?key=xxx&routeID=19&busID=915</span>
+ <span style="font-weight:bold;margin-left:24px;">http://www.smsmybus.com/api/v1/getarrivals?key=xxx&routeID=19&vehicleID=915</span>
  <h3>Response</h3>
  The response length is dependent on the particular request parameters. If the status field is 0, the response
  will be grouped by stop and each stop will be grouped by routes traveling through the respective stop.
- <p> </p>
+ <p>The following results example is for a single stopID. </p>
 <code class="prettyprint lang-xml">
 &lt;?xml version=”1.0”?&gt;
   &lt;SMSMyBusResponse&gt;
@@ -88,8 +91,12 @@
     &lt;timestampe&gt;12:38pm&lt;/timestamp&gt;
     &lt;stop&gt;
       &lt;stopID&gt;1101&lt;/stopID&gt;
+      &lt;lat&gt;43.0733718&lt;/lat&gt;
+      &lt;lon&gt;-89.3838018&lt;/lon&gt;
+      &lt;intersection&gt;Main & Carroll&lt;/intersection&gt;
       &lt;route&gt;
         &lt;routeID&gt;4&lt;/routeID&gt;
+        &lt;vehicleID&gt;993&lt;/vehicle&gt;
         &lt;human&gt;Route 4 toward STP arrives in 10 minutes&lt;/human&gt;
         &lt;minutes&gt;10&lt;/minutes&gt;
         &lt;arrivalTime&gt;12:44pm&lt;/arrivalTime&gt;
@@ -97,29 +104,12 @@
       &lt;/route&gt;
       &lt;route&gt;
         &lt;routeID&gt;3&lt;/routeID&gt;
+        &lt;vehicleID&gt;433&lt;/vehicle&gt;
         &lt;human&gt;Route 3 toward ETP arrives in 12 minutes&lt;/human&gt;
         &lt;minutes&gt;12&lt;/minutes&gt;
         &lt;arrivalTime&gt;12:46pm&lt;/arrivalTime&gt;
         &lt;destination&gt;ETP&lt;/destination&gt;
-      &lt;/route&gt;
-      ...
-      ...
-    &lt;/stop&gt;
-    &lt;stop&gt;
-      &lt;stopID&gt;1787&lt;/stopID&gt;
-      &lt;route&gt;
-        &lt;routeID&gt;4&lt;/routeID&gt;
-        &lt;human&gt;Route 4 toward STP arrives in 12 minutes&lt;/human&gt;
-        &lt;minutes&gt;12&lt;/minutes&gt;
-        &lt;arrivalTime&gt;12:46pm&lt;/arrivalTime&gt;
-        &lt;destination&gt;STP&lt;/destination&gt;
-      &lt;/route&gt;
-      &lt;route&gt;
-        &lt;routeID&gt;3&lt;/routeID&gt;
-        &lt;human&gt;Route 3 toward ETP arrives in 14 minutes&lt;/human&gt;
-        &lt;minutes&gt;14&lt;/minutes&gt;
-        &lt;arrivalTime&gt;12:48pm&lt;/arrivalTime&gt;
-        &lt;destination&gt;ETP&lt;/destination&gt;
+        &lt;alternate&gt;via Winnebago&lt;/alternate&gt;
       &lt;/route&gt;
       ...
       ...
@@ -127,7 +117,8 @@
     ...
     ...
   &lt;/SMSMyBusResponse&gt;
-</code>
+  </code>
+  <p>If a vehicleID is specified, multiple stops will be returned.</p>
  <h3>Error</h3>
  An error is indicated by a non-zero status value. If the status value is non-zero, the description field will be 
  present describing the error in plain English.

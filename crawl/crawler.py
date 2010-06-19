@@ -1,6 +1,7 @@
 import wsgiref.handlers
 import logging
 import re
+import os
 
 from google.appengine.api import quota
 from google.appengine.api import urlfetch
@@ -10,6 +11,7 @@ from google.appengine.api.labs import taskqueue
 from google.appengine.api.labs.taskqueue import Task
 from google.appengine.ext import webapp
 from google.appengine.ext import db
+from google.appengine.ext.webapp import template
 
 from google.appengine.runtime import apiproxy_errors
 
@@ -89,7 +91,7 @@ class CrawlingTaskHandler(webapp.RequestHandler):
                             stop.stopID = stopID
                             stop.intersection = intersection
                             stop.put()
-                            logging.info("adde new stop listing MINUS geo location")
+                            logging.info("added new stop listing MINUS geo location")
                         
                         # pull the route and direction data from the URL
                         #routeData = scrapeURL.split('?')[1]
@@ -114,7 +116,8 @@ class CrawlingTaskHandler(webapp.RequestHandler):
                           #logging.info("added new route listing entry to the database!")
                         #else:
                           #logging.error("we found a duplicate entry!?! %s", routeQuery[0].scheduleURL)
-                    else: # title.split(",")[0].isdigit():
+                    #else: # title.split(",")[0].isdigit():
+                    elif href.find("?r=19") > -1:
                         # create a new task with this link
                         crawlURL = CRAWL_URLBASE + href
                         task = Task(url='/crawlingtask', params={'crawl':crawlURL,})
@@ -173,7 +176,7 @@ class CrawlingGeoTaskHandler(webapp.RequestHandler):
             end = quota.get_request_cpu_usage()
             logging.info("scraping took %s cycles" % (end-start))
 
-            if result.content[0] == '5':
+            if result.content[0] == '6':
                 # parser for the geo stop data...
                 stops = result.content.split('<br>')
                 for s in stops:
@@ -181,16 +184,12 @@ class CrawlingGeoTaskHandler(webapp.RequestHandler):
                     if s[0] == '|':
                         data = re.search('\|\d+;.*?(4.*?)\|(.*?)\|(.*?)\[ID#(\d+)\]\|(.*?)\|',s)
                         if data is not None:
+                            
                             latitude = data.group(1)
                             longitude = data.group(2)
                             intersection = data.group(3)
                             stopID = data.group(4)
                             direction = data.group(5)
-                            #logging.info("LAT: %s" % latitude)
-                            #logging.info("LONG: %s" % longitude)
-                            #logging.info("Intersection: %s" % intersection)
-                            #logging.info("Stop ID: %s" % stopID)
-                            #ogging.info("direction: %s" % direction)
                             q = db.GqlQuery("SELECT * FROM StopLocation WHERE stopID = :1", stopID)
                             stop = q.get()
                             if stop is None:
@@ -199,20 +198,19 @@ class CrawlingGeoTaskHandler(webapp.RequestHandler):
                                 stop.location = (latitude+","+longitude)
                                 stop.update_location()
                                 stop.direction = direction
-                                stop.put()
+                                #stop.put()
                                 #logging.info("GEO DATA ADDED for %s" % intersection)
                                 
                                 # update the route table to include a reference to the new geo data
-                                #q = db.GqlQuery("SELECT * FROM RouteListing WHERE stopID = :1", stopID)
-                                #route = q.get()
-                                #if route is None:
-                                #    logging.error("IMPOSSIBLE... no stop on record?!? %s", stopID)
-                                #else:
-                                #    route.stopLocation = stop
-                                #    route.put()
-                                
-                        else:
-                            logging.debug("Nothing found?!")
+                                q = db.GqlQuery("SELECT * FROM RouteListing WHERE stopID = :1", stopID)
+                                route = q.get()
+                                if route is None:
+                                    logging.error("IMPOSSIBLE... no stop on record?!? %s", stopID)
+                                else:
+                                    route.stopLocation = stop
+                                    route.put()
+        
+ 
                 return
             
             # start to interrogate the results
@@ -228,13 +226,12 @@ class CrawlingGeoTaskHandler(webapp.RequestHandler):
                     if title.find("[ID#") > 0:
                         # this should never happen
                         logging("FATAL ERROR")
-                    else: 
+                    elif href.find("?r=19") > -1: 
                         crawlURL = "http://webwatch.cityofmadison.com/webwatch/UpdateWebMap.aspx?u="+href.split("=")[1]
                         task = Task(url='/crawlinggeotask', params={'crawl':crawlURL,})
                         task.add('crawler')
                         logging.info("Added new task for %s" % crawlURL)
 
-                                        
         except apiproxy_errors.DeadlineExceededError:
             logging.error("DeadlineExceededError exception!?")
             return
@@ -251,10 +248,45 @@ class DropTableHandler(webapp.RequestHandler):
         results = q.fetch(500)
         while results:
             db.delete(results)
-            results = fetch(500, len(results))
+            results = q.fetch(500, len(results))
 
 ## end
     
+class StopListHandler(webapp.RequestHandler):
+    def get(self,stopID=""):
+        return
+    
+## end
+    
+class RouteListHandler(webapp.RequestHandler):
+    def get(self,routeID=""):
+      logging.info("fetching all stop locations...")
+      q = StopLocation.all()
+      if q is not None:
+          results = []
+          
+          # Perform the query to get 500 results.
+          stops = q.fetch(500)
+          logging.info("running through stop location list....")
+          for s in stops:
+              results.append({'stopID':s.stopID,
+                              'location':s.location,
+                              'intersection':s.intersection,
+                              'direction':s.direction,
+                              'routeID':routeID,
+                              })
+              
+              
+      # add the counter to the template values
+      template_values = {'stops':results}
+        
+      # create a page that provides a form for sending an SMS message
+      path = os.path.join(os.path.dirname(__file__), 'stop.html')
+      self.response.out.write(template.render(path,template_values))
+
+    
+## end
+
 ## end ScrapeRouteStopHandler
 def main():
   logging.getLogger().setLevel(logging.INFO)
@@ -262,6 +294,7 @@ def main():
                                         ('/configuregeo', CrawlGeoHandler),
                                         ('/crawlingtask', CrawlingTaskHandler),
                                         ('/crawlinggeotask', CrawlingGeoTaskHandler),
+                                        ('/routelist/(.*)', RouteListHandler),
                                         ('/droptable/(.*)', DropTableHandler),
                                         ],
                                        debug=True)

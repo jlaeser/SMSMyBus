@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>smsmybus</name>
+	<name>SMSMyBus</name>
 	<comment></comment>
 	<projects>
+		<project>geo</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

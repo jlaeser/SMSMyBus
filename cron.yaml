@@ -1,7 +1,7 @@
 cron:
 - description: aggregation table cleaner
   url: /cleandb
-  schedule: every 2 hours
+  schedule: every 30 minutes
 
 - description: fetch web service data by stop
   url: /rest/prefetch/1878/
