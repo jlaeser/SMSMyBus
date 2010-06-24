@@ -266,7 +266,7 @@
       	          if (++i>4) {$("#"+stopID+"-estimates").append('<span class="arrival"> ...#'+routeID+' in '+minutes+' min </span>'); return true;} //limit number of rows
           	       var human = $(this).find('human').text();
           	       var arrival = $(this).find('arrivalTime').text();
-          	       var destination = $(this).find('destination').text();
+          	       var destination = $(this).find('direction').text();
           	       destination = destination.substring(0,12); //limit the length in case of long ones (unknown risk)
           	       //alert(human);
           	       //$("#estimates").append("Route "+routeID+" arrives in "+minutes+" minutes<br/>");
@@ -283,9 +283,8 @@
           //Note: this is now stupid, make the document.ready call a named function
           //alert("refresh");
           updateClock();
-          refreshTimes('1100', '<< Eastbound');
-          //refreshTimes('1505', '<< Eastbound');
-          //refreshTimes('1878', 'Westbound >>');
+          refreshTimes('1505', '<< Eastbound');
+          refreshTimes('1878', 'Westbound >>');
 	   });
     </script>
 
@@ -293,9 +292,8 @@
     <script type="text/javascript">
       $(document).ready(function() {
           updateClock();
-          refreshTimes('1100', '<< Eastbound');
-          //refreshTimes('1505', '<< Eastbound');
-          //refreshTimes('1878', 'Westbound >>');
+          refreshTimes('1505', '<< Eastbound');
+          refreshTimes('1878', 'Westbound >>');
       });
     </script>
     
@@ -345,7 +343,7 @@
 	<div class="colleft">
 		<div class="col1">
 			<!-- Column 1 start -->
-            <div class="estimates" id="1100-estimates">stuff</div>
+            <div class="estimates" id="1505-estimates">stuff</div>
 			<!-- Column 1 end -->
 
 		</div>

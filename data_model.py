@@ -47,7 +47,8 @@ class LiveRouteStatus(db.Model):
     arrivalTime  = db.StringProperty()
     time         = db.IntegerProperty()
     intersection = db.StringProperty()
-    direction    = db.StringProperty()
+    destination  = db.StringProperty()
+    routeQualifier = db.StringProperty()
     stopLocation = db.ReferenceProperty(StopLocation,collection_name="liveroutes")    
 ## end LiveRouteStatus
 
@@ -56,7 +57,7 @@ class LiveVehicleStatus(db.Model):
     routeID      = db.StringProperty()
     vehicleID    = db.StringProperty()
     location     = db.GeoPtProperty()
-    direction    = db.StringProperty()
+    destination  = db.StringProperty()
     nextTimepoint= db.StringProperty()
 ## end LiveVehicleStatus
 

@@ -2,13 +2,13 @@ import wsgiref.handlers
 import logging
 import re
 import time
+from datetime import timedelta
+from datetime import datetime
 
 from google.appengine.api import quota
 from google.appengine.api import urlfetch
 from google.appengine.api import memcache
 from google.appengine.api.urlfetch import DownloadError
-from google.appengine.api.labs import taskqueue
-from google.appengine.api.labs.taskqueue import Task
 from google.appengine.ext import webapp
 from google.appengine.ext import db
 from google.appengine.ext.db import GeoPt
@@ -53,6 +53,9 @@ class CrawlerHandler(webapp.RequestHandler):
                         loop = loop+1
             end = quota.get_request_cpu_usage()
             logging.info("scraping took %s cycles" % (end-start))
+            if not done:
+                logging.error("prefecth failed... couldn't fetch the URL %s" % scrapeURL)
+                return
 
             # get the local time and convert it to madison time
             ltime = time.localtime()
@@ -80,7 +83,6 @@ class CrawlerHandler(webapp.RequestHandler):
             lon = '-80'
             intersection = ' '
             stopID = '0'
-            direction = ' '
             arrivalEstimate = ' '
             destination = ' '
             vehicleStats = []
@@ -100,9 +102,9 @@ class CrawlerHandler(webapp.RequestHandler):
                 lat = data.group(1)
                 lon = data.group(2)
                 intersection = data.group(3)
-                direction = data.group(4)
+                destination = data.group(4)
                 arrival = data.group(5)
-                directionDescriptor = data.group(6)
+                routeQualifier = data.group(6)
             
             for s in stops:
                 #logging.info("Parsing... %s" % s)
@@ -133,18 +135,23 @@ class CrawlerHandler(webapp.RequestHandler):
                         stopDetails = re.search('(.*?)\[ID#(\d+)\]',intersection)
                         intersection = stopDetails.group(1)
                         stopID = stopDetails.group(2)
+                    elif stopID == '0':
+                        stopID = findStopID(intersection,destination)
+                        stopID = '0' if stopID is None else stopID
+                        logging.debug("extracted stop ID %s using intersection %s, direction %s" % (stopID,intersection,destination))
                         
-                    direction = data.group(5)
+                    destination = data.group(5)
                     arrivalEstimate = data.group(6)
-                    destination = data.group(7)
-                    #logging.info("%s + %s + %s + %s + %s + %s + %s + %s" % (routeToken,lat,lon,intersection,stopID,direction,arrivalEstimate,destination))
+                    routeQualifier = data.group(7)
+                    #logging.info("%s + %s + %s + %s + %s + %s + %s + %s" % (routeToken,lat,lon,intersection,stopID,destination,arrivalEstimate,destination))
                     status = LiveRouteStatus()
                     status.routeToken = routeToken
                     status.routeID = routeID
                     status.stopID = stopID
                     status.arrivalTime = arrivalEstimate
                     status.intersection = intersection
-                    status.direction = direction
+                    status.destination = destination
+                    status.routeQualifier = routeQualifier
                     status.stopLocation = getLocation(lat,lon,stopID)
                     status.time = getAbsoluteTime(arrivalEstimate)
 
@@ -152,7 +159,7 @@ class CrawlerHandler(webapp.RequestHandler):
                     status.put()
                     
                 elif re.search('^\d+:\d+',realLine) is not None:
-                    logging.debug("we're assuming this is a timestamp line for stopID %s" % stopID)
+                    #logging.debug("we're assuming this is a timestamp line for stopID %s" % stopID)
                     data = re.search('(\d+:\d+\s\w+)\s+TO\s+(.*)',realLine)
                     if data is not None:
                         #logging.info("%s + %s" % (data.group(1),data.group(2)))
@@ -163,12 +170,13 @@ class CrawlerHandler(webapp.RequestHandler):
                         status.arrivalTime = data.group(1)
                         status.time = getAbsoluteTime(data.group(1))
                         status.intersection = intersection
-                        status.direction = direction
+                        status.destination = destination
+                        status.routeQualifier = data.group(2)
                         status.stopLocation = getLocation(lat,lon,stopID)
                         status.put()
                         
                 elif realLine.endswith(';') is False:
-                    logging.debug("we're parsing details for a specific vehicle %s" % realLine)
+                    #logging.debug("we're parsing details for a specific vehicle %s" % realLine)
                     vehicleStats.append(realLine)
                 else:
                     logging.error("bogus route entry line. we have no idea what to do with it! %s" % realLine)
@@ -176,28 +184,28 @@ class CrawlerHandler(webapp.RequestHandler):
             # parse the vehicle detail data we collected...
             lat = '0'
             lon = '0'
-            direction = '-1'
+            destination = '-1'
             vehicleID = '-1'
-            logging.debug("start to analyze vehicle data (length: %s)" % len(vehicleStats))
+            #logging.debug("start to analyze vehicle data (length: %s)" % len(vehicleStats))
             for v in vehicleStats:
                 # these lines are very POORLY formed. the first entry has junk on the front
                 # and the lat/lon data one line will reference a vehicle defined on the next line
                 data = re.search('\d+;\*(\d+\.\d+)\|(-\d+\.\d+)\|\d+\|\<b\>(.*?)\<',v)
                 if data is not None:
-                    logging.debug("found first vehicle line... %s" % v)
+                    #logging.debug("found first vehicle line... %s" % v)
                     lat = data.group(1)
                     lon = data.group(2)
-                    direction = data.group(3)
+                    destination = data.group(3)
                 elif v.find("Vehicle") > -1:
-                    logging.debug("found a vehicle identifier... %s" % v)
+                    #logging.debug("found a vehicle identifier... %s" % v)
                     data = re.search('Vehicle.*?:\s(\d+)',v)
                     if data is not None:
                         vehicleID = data.group(1).lstrip().rstrip()
                     else:
                         vehicleID = '-1'
-                        logging.error("unable to identify a vehicle number!?")
+                        #logging.error("unable to identify a vehicle number!?")
                 elif v.find("Timepoint") > -1:
-                    logging.debug("found a timepoint... %s" % v)
+                    #logging.debug("found a timepoint... %s" % v)
                     if v.find("*") > -1:
                         # this is the last entry so the regular expression is a bit different
                         data = re.search('Timepoint\:\s+(.*?);\*',v)
@@ -207,17 +215,17 @@ class CrawlerHandler(webapp.RequestHandler):
                             q = db.GqlQuery("SELECT * FROM LiveVehicleStatus WHERE routeID = :1 and vehicleID = :2",routeID,vehicleID)
                             vehicle = q.get()
                             if vehicle is None:
-                                logging.debug("NEW BUS!")
+                                #logging.debug("NEW BUS!")
                                 vehicle = LiveVehicleStatus()
                             vehicle.routeID = routeID
                             vehicle.vehicleID = vehicleID
                             vehicle.location = GeoPt(lat,lon)
-                            vehicle.direction = direction
+                            vehicle.destination = destination
                             vehicle.nextTimepoint = data.group(1)
-                            logging.info("adding new vehicle (1)... %s at %s" % (vehicleID,vehicle.location))
+                            #logging.info("adding new vehicle (1)... %s at %s" % (vehicleID,vehicle.location))
                             vehicle.put()
                         else:
-                            logging.error("invalid timepoint entry!!")
+                            logging.error("VEHICLE SCAN: invalid timepoint entry!!")
                     else:
                         data = re.search('Timepoint\:\s+(.*?);(\d+\.\d+)\|(-\d+\.\d+)\|\d+\|\<b\>(.*?)\<',v)
                         if data is not None:
@@ -226,22 +234,22 @@ class CrawlerHandler(webapp.RequestHandler):
                             q = db.GqlQuery("SELECT * FROM LiveVehicleStatus WHERE routeID = :1 and vehicleID = :2",routeID,vehicleID)
                             vehicle = q.get()
                             if vehicle is None:
-                                logging.debug("NEW BUS!")
+                                #logging.debug("NEW BUS!")
                                 vehicle = LiveVehicleStatus()
                             vehicle.routeID = routeID
                             vehicle.vehicleID = vehicleID
                             vehicle.location = GeoPt(lat,lon)
-                            vehicle.direction = direction
+                            vehicle.destination = destination
                             vehicle.nextTimepoint = data.group(1)
-                            logging.info("adding new vehicle (2)... %s at %s" % (vehicleID,vehicle.location))
+                            #logging.info("adding new vehicle (2)... %s at %s" % (vehicleID,vehicle.location))
                             vehicle.put()
 
                             # now reset lat/lon for the next loop iteration
                             lat = data.group(2)
                             lon = data.group(3)
-                            direction = data.group(4)
+                            destination = data.group(4)
                         else:
-                            logging.error("invalid timepoint entry!!")
+                            logging.error("VEHICLE SCAN: invalid timepoint entry!!")
 
         
         except apiproxy_errors.DeadlineExceededError:
@@ -260,16 +268,38 @@ class CrawlerCheckHandler(webapp.RequestHandler):
 ## end CrawlerCheckHandler
 
 class CrawlerCleanerHandler(webapp.RequestHandler):
-    def get(self):
-        qstring = "select __key__ from " + table
-        logging.info("query string is... %s" % qstring)
-        q = db.GqlQuery(qstring)
+    def get(self,table=""):
+        hourAgo = timedelta(hours=1)
+        logging.info("hour ago... %s",hourAgo)
+        timestamp = datetime.now() - hourAgo
+        logging.info("current time... %s",datetime.now())
+        logging.info("timestamp for query... %s",timestamp)
+        qstring = "select __key__ from " + table + " where dateAdded < :1"
+        logging.info("crawler cleaning :: query string is... %s" % qstring)
+        q = db.GqlQuery(qstring,timestamp)
         results = q.fetch(500)
         while results:
             db.delete(results)
-            results = fetch(500, len(results))
+            results = q.fetch(500, len(results))
 ## end CrawlerCleanerHandler
 
+def findStopID(intersection,direction):
+    
+    intersection = intersection.upper()
+    cacheKey = intersection+":"+direction
+    stopID = memcache.get(cacheKey)
+    if stopID is None:
+        stop = db.GqlQuery("SELECT * FROM StopLocation WHERE intersection = :1 and direction = :2", intersection, direction).get()
+        if stop is not None:
+            stopID = stop.stopID
+            logging.debug("adding stop %s to memcache" % stopID)
+            memcache.add(cacheKey,stopID)
+        else:
+            logging.error("impossible! we couldn't find this intersection, %s, in the datastore" % intersection)
+    
+    return stopID
+
+## end findStopID
 
 def getLocation(lat,lon,stopID):
     
@@ -296,7 +326,7 @@ def getLocation(lat,lon,stopID):
                                  geoString).get()
             
         if geoKey is not None:
-            logging.debug("adding %s key to memcache" % geoKey)
+            #logging.debug("adding %s key to memcache" % geoKey)
             memcache.add(geoString,geoKey)
         else:
             logging.error("Unable to getLocation for this stop %s,%s" % (lat,lon))
@@ -326,8 +356,7 @@ def getAbsoluteTime(timestamp):
 def main():
   logging.getLogger().setLevel(logging.DEBUG)
   application = webapp.WSGIApplication([('/crawl/prefetch/(.*)', CrawlerHandler),
-                                        ('/crawl/checker/(.*)', CrawlerCheckHandler),
-                                        ('/crawl/clearn', CrawlerCleanerHandler),
+                                        ('/crawl/clean/(.*)', CrawlerCleanerHandler),
                                         ],
                                        debug=True)
   wsgiref.handlers.CGIHandler().run(application)

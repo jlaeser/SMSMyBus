@@ -181,13 +181,17 @@ def stopRequest(stopID, devStoreKey):
                     
     for r in routes_min:
         if r == routes_min[0]:
-            xml += '<lat>'+str(r.stopLocation.location.lat)+'</lat><lon>'+str(r.stopLocation.location.lon)+'</lon>'
+            if r.stopLocation.location is not None:
+                xml += '<lat>'+str(r.stopLocation.location.lat)+'</lat><lon>'+str(r.stopLocation.location.lon)+'</lon>'
+            else:
+                xml += '<lat>unknown</lat><lon>unknown</lon>'
             xml += '<intersection>'+r.intersection.replace('&','/')+'</intersection>'
         xml += '<route><routeID>'+r.routeID+'</routeID>'
         xml += '<vehicleID>unknown</vehicleID>'
         xml += '<minutes>'+str(computeCountdownMinutes(r.arrivalTime))+'</minutes>'
         xml += '<arrivalTime>'+r.arrivalTime+'</arrivalTime>'
-        xml += '<destination>'+r.direction+'</destination>'
+        xml += '<destination>'+r.destination+'</destination>'
+        xml += '<direction>'+r.routeQualifier+'</direction>'
         xml += '</route>'
     # end for
     xml += '</stop></SMSMyBusResponse>'
@@ -216,7 +220,8 @@ def stopRouteRequest(stopID, routeID, devStoreKey):
         xml += '<vehicleID>unknown</vehicleID>'
         xml += '<minutes>'+str(computeCountdownMinutes(r.arrivalTime))+'</minutes>'
         xml += '<arrivalTime>'+r.arrivalTime+'</arrivalTime>'
-        xml += '<destination>'+r.direction+'</destination>'
+        xml += '<destination>'+r.destination+'</destination>'
+        xml += '<direction>'+r.routeQualifier+'</direction>'
         xml += '</route>'
     # end for
     xml += '</stop></SMSMyBusResponse>'
@@ -240,7 +245,7 @@ def routeVehicleRequest(routeID, vehicleID, devStoreKey):
         xml += '<vehicle><vehicleID>'+v.vehicleID+'</vehicleID>'
         xml += '<lat>'+str(v.location.lat)+'</lat><lon>'+str(v.location.lon)+'</lon>'
         xml += '<nextTimepoint>'+v.nextTimepoint.replace('&','/')+'</nextTimepoint>'
-        xml += '<direction>'+v.direction+'</direction>'
+        xml += '<destination>'+v.destination+'</destination>'
         xml += '</vehicle>'
     # end for
     xml += '</route></SMSMyBusResponse>'
