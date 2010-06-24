@@ -39,7 +39,8 @@ class CrawlingTaskHandler(webapp.RequestHandler):
     def post(self):
         try:
             scrapeURL = self.request.get('crawl')
-            logging.debug("task scraping for %s" % scrapeURL)
+            direction = self.request.get('direction')
+            logging.debug("task scraping for %s, direction %s" % (scrapeURL,direction))
             
             loop = 0
             done = False
@@ -90,6 +91,7 @@ class CrawlingTaskHandler(webapp.RequestHandler):
                             stop = StopLocation()
                             stop.stopID = stopID
                             stop.intersection = intersection
+                            stop.direction = direction
                             stop.put()
                             logging.info("added new stop listing MINUS geo location")
                         
@@ -117,12 +119,12 @@ class CrawlingTaskHandler(webapp.RequestHandler):
                         #else:
                           #logging.error("we found a duplicate entry!?! %s", routeQuery[0].scheduleURL)
                     #else: # title.split(",")[0].isdigit():
-                    elif href.find("?r=19") > -1:
+                    elif href.find("?r=03") > -1:
                         # create a new task with this link
                         crawlURL = CRAWL_URLBASE + href
-                        task = Task(url='/crawlingtask', params={'crawl':crawlURL,})
+                        task = Task(url='/crawlingtask', params={'crawl':crawlURL,'direction':title})
                         task.add('crawler')
-                        logging.info("Added new task for %s" % title.split(",")[0])                    # label crawler looks for titles with letters for extraction/persistence
+                        logging.info("Added new task for %s, direction %s" % (title.split(",")[0],title))                    # label crawler looks for titles with letters for extraction/persistence
                     #elif title.replace('-','').replace(' ','').isalpha():
                     #    routeData = href.split('?')[1]
                     #    logging.info("found the route LABEL page! href: %s" % href)
@@ -197,8 +199,8 @@ class CrawlingGeoTaskHandler(webapp.RequestHandler):
                             else:
                                 stop.location = (latitude+","+longitude)
                                 stop.update_location()
-                                stop.direction = direction
-                                #stop.put()
+                                #stop.direction = direction
+                                stop.put()
                                 #logging.info("GEO DATA ADDED for %s" % intersection)
                                 
                                 # update the route table to include a reference to the new geo data
@@ -226,7 +228,7 @@ class CrawlingGeoTaskHandler(webapp.RequestHandler):
                     if title.find("[ID#") > 0:
                         # this should never happen
                         logging("FATAL ERROR")
-                    elif href.find("?r=19") > -1: 
+                    elif href.find("?r=03") > -1:
                         crawlURL = "http://webwatch.cityofmadison.com/webwatch/UpdateWebMap.aspx?u="+href.split("=")[1]
                         task = Task(url='/crawlinggeotask', params={'crawl':crawlURL,})
                         task.add('crawler')
