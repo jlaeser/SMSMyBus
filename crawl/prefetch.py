@@ -8,20 +8,24 @@ from datetime import datetime
 from google.appengine.api import quota
 from google.appengine.api import urlfetch
 from google.appengine.api import memcache
+from google.appengine.api.labs import taskqueue
+from google.appengine.api.labs.taskqueue import Task
 from google.appengine.api.urlfetch import DownloadError
 from google.appengine.ext import webapp
 from google.appengine.ext import db
+from google.appengine.datastore import entity_pb
 from google.appengine.ext.db import GeoPt
 
 from google.appengine.runtime import apiproxy_errors
 
 from data_model import LiveRouteStatus
 from data_model import LiveVehicleStatus
+from data_model import ParseErrors
 from geo.geomodel import GeoModel
 
 ROUTE_URLBASE = "http://webwatch.cityofmadison.com/webwatch/UpdateWebMap.aspx?u="
 
-class CrawlerHandler(webapp.RequestHandler):
+class PrefetchHandler(webapp.RequestHandler):
     def get(self, routeID=""):
         # don't run these jobs during "off" hours
         ltime = time.localtime()
@@ -106,6 +110,7 @@ class CrawlerHandler(webapp.RequestHandler):
                 arrival = data.group(5)
                 routeQualifier = data.group(6)
             
+            statusUpdates = []
             for s in stops:
                 #logging.info("Parsing... %s" % s)
                 if s == stops[0]:
@@ -136,7 +141,19 @@ class CrawlerHandler(webapp.RequestHandler):
                         intersection = stopDetails.group(1)
                         stopID = stopDetails.group(2)
                     elif stopID == '0':
-                        stopID = findStopID(intersection,destination)
+                        logging.error("Error parsing NEW STOP... %s" % realLine)
+                        stopID = findStopID(intersection,destination,lat,lon)
+                        if stopID is None:
+                            # create a task event to process the error
+                            task = Task(url='/crawl/errortask', params={'intersection':intersection,
+                                                                        'location':(lat+","+lon),
+                                                                        'direction':destination,
+                                                                        'metaStringOne':realLine,
+                                                                        'metaStringTwo':'empty'
+                                                                        })
+                            task.add('crawlerrors')
+                            logging.debug("Added new error logging task for %s" % realLine)
+
                         stopID = '0' if stopID is None else stopID
                         logging.debug("extracted stop ID %s using intersection %s, direction %s" % (stopID,intersection,destination))
                         
@@ -156,7 +173,8 @@ class CrawlerHandler(webapp.RequestHandler):
                     status.time = getAbsoluteTime(arrivalEstimate)
 
                     # commit to datastore
-                    status.put()
+                    statusUpdates.append(status)
+                    #status.put()
                     
                 elif re.search('^\d+:\d+',realLine) is not None:
                     #logging.debug("we're assuming this is a timestamp line for stopID %s" % stopID)
@@ -173,7 +191,8 @@ class CrawlerHandler(webapp.RequestHandler):
                         status.destination = destination
                         status.routeQualifier = data.group(2)
                         status.stopLocation = getLocation(lat,lon,stopID)
-                        status.put()
+                        statusUpdates.append(status)
+                        #status.put()
                         
                 elif realLine.endswith(';') is False:
                     #logging.debug("we're parsing details for a specific vehicle %s" % realLine)
@@ -181,12 +200,16 @@ class CrawlerHandler(webapp.RequestHandler):
                 else:
                     logging.error("bogus route entry line. we have no idea what to do with it! %s" % realLine)
                       
+            # push the status updates to the datastore
+            db.put(statusUpdates)
+                      
             # parse the vehicle detail data we collected...
+            vehicleUpdates = []
             lat = '0'
             lon = '0'
             destination = '-1'
             vehicleID = '-1'
-            #logging.debug("start to analyze vehicle data (length: %s)" % len(vehicleStats))
+            logging.info("start to analyze vehicle data (length: %s)" % len(vehicleStats))
             for v in vehicleStats:
                 # these lines are very POORLY formed. the first entry has junk on the front
                 # and the lat/lon data one line will reference a vehicle defined on the next line
@@ -223,7 +246,8 @@ class CrawlerHandler(webapp.RequestHandler):
                             vehicle.destination = destination
                             vehicle.nextTimepoint = data.group(1)
                             #logging.info("adding new vehicle (1)... %s at %s" % (vehicleID,vehicle.location))
-                            vehicle.put()
+                            vehicleUpdates.append(vehicle)
+                            #vehicle.put()
                         else:
                             logging.error("VEHICLE SCAN: invalid timepoint entry!!")
                     else:
@@ -242,7 +266,8 @@ class CrawlerHandler(webapp.RequestHandler):
                             vehicle.destination = destination
                             vehicle.nextTimepoint = data.group(1)
                             #logging.info("adding new vehicle (2)... %s at %s" % (vehicleID,vehicle.location))
-                            vehicle.put()
+                            vehicleUpdates.append(vehicle)
+                            #vehicle.put()
 
                             # now reset lat/lon for the next loop iteration
                             lat = data.group(2)
@@ -251,7 +276,9 @@ class CrawlerHandler(webapp.RequestHandler):
                         else:
                             logging.error("VEHICLE SCAN: invalid timepoint entry!!")
 
-        
+            # push the vehicle updates to the datastore
+            db.put(vehicleUpdates)
+            
         except apiproxy_errors.DeadlineExceededError:
             logging.error("DeadlineExceededError exception!?")
             return
@@ -281,21 +308,42 @@ class CrawlerCleanerHandler(webapp.RequestHandler):
         while results:
             db.delete(results)
             results = q.fetch(500, len(results))
+            
 ## end CrawlerCleanerHandler
 
-def findStopID(intersection,direction):
+class ErrorTaskHandler(webapp.RequestHandler):
+    def post(self):
+        
+        result = db.GqlQuery("SELECT __key__ from ParseErrors where intersection = :1", self.request.get('intersection')).get()
+        if result is None:
+          error = ParseErrors()
+          error.intersection = self.request.get('intersection')
+          location = self.request.get('location').split(',')
+          error.location = GeoPt(location[0],location[1])
+          error.direction = self.request.get('direction')
+          error.metaStringOne = self.request.get('metaStringOne')
+          error.metaStringTwo = self.request.get('metaStringTwo')
+          error.put()
+
+## end ErrorTaskHandler
+
+
+def findStopID(intersection,direction,lat,lon):
     
     intersection = intersection.upper()
     cacheKey = intersection+":"+direction
     stopID = memcache.get(cacheKey)
     if stopID is None:
-        stop = db.GqlQuery("SELECT * FROM StopLocation WHERE intersection = :1 and direction = :2", intersection, direction).get()
+        #stop = db.GqlQuery("SELECT * FROM StopLocation WHERE intersection = :1 and direction = :2", intersection, direction).get()
+        #stop = db.GqlQuery("SELECT * FROM StopLocation WHERE intersection = :1", intersection).get()
+        location = GeoPt(lat,lon)
+        stop = db.GqlQuery("SELECT * FROM StopLocation WHERE location = :1", location).get()
         if stop is not None:
             stopID = stop.stopID
             logging.debug("adding stop %s to memcache" % stopID)
-            memcache.add(cacheKey,stopID)
+            memcache.set(cacheKey,stopID)
         else:
-            logging.error("impossible! we couldn't find this intersection, %s, in the datastore" % intersection)
+            logging.error("impossible! we couldn't find this intersection, x%sx x%sx, in the datastore" % (intersection,location))
     
     return stopID
 
@@ -309,29 +357,30 @@ def getLocation(lat,lon,stopID):
     # in some cases, for some unknown reason, i'll use the a 
     # concatenated string of lat/long
     
-    #logging.debug("fetching stop location for stop %s : %s,%s" % (stopID, lat,lon))
-    
-    if stopID == '0':
-        geoString = lat+","+lon
-    else:
-        geoString = stopID
+    logging.debug("fetching stop location for stop %s : %s,%s" % (stopID, lat,lon))
+    geoString = lat+","+lon
+
         
-    geoKey = memcache.get(geoString)
-    if geoKey is None:
+    stopEntity = memcache.get(geoString)
+    if stopEntity is None:
         if stopID != '0':
-            geoKey = db.GqlQuery("SELECT __key__ FROM StopLocation where stopID = :1",
-                                 stopID).get()
+            stopEntity = db.GqlQuery("SELECT * FROM StopLocation where stopID = :1",
+                                     stopID).get()
         else:
-            geoKey = db.GqlQuery("SELECT __key__ FROM StopLocation where location = :1",
-                                 geoString).get()
-            
-        if geoKey is not None:
-            #logging.debug("adding %s key to memcache" % geoKey)
-            memcache.add(geoString,geoKey)
+            location = GeoPt(lat,lon)
+            stopEntity = db.GqlQuery("SELECT * FROM StopLocation where location = :1",
+                                     location).get()
+
+        if stopEntity is not None:
+            memcache.set(geoString, db.model_to_protobuf(stopEntity).Encode())
         else:
             logging.error("Unable to getLocation for this stop %s,%s" % (lat,lon))
-            
-    return geoKey
+    
+    else:
+        stopEntity = db.model_from_protobuf(entity_pb.EntityProto(stopEntity))
+        
+    return stopEntity
+
 ## end getLocation()
     
 def getAbsoluteTime(timestamp):
@@ -346,8 +395,6 @@ def getAbsoluteTime(timestamp):
         minutes = int(timestamp.split(':')[1].split()[0])
         arrivalMinutes = (hours * 60) + minutes
         #logging.debug("chop up produced %s hours and %s minutes - %s" % (hours,minutes,arrivalMinutes))
-    else:
-        logging.error("invalid timestamp parsing!?! %s" % timestamp)
         
     return arrivalMinutes
 ## end getAbsoluteTime()
@@ -355,9 +402,9 @@ def getAbsoluteTime(timestamp):
 
 def main():
   logging.getLogger().setLevel(logging.DEBUG)
-  application = webapp.WSGIApplication([('/crawl/prefetch/(.*)', CrawlerHandler),
+  application = webapp.WSGIApplication([('/crawl/prefetch/(.*)', PrefetchHandler),
                                         ('/crawl/clean/(.*)', CrawlerCleanerHandler),
-                                        ],
+                                        ('/crawl/errortask', ErrorTaskHandler),],
                                        debug=True)
   wsgiref.handlers.CGIHandler().run(application)
 

@@ -12,6 +12,7 @@ class PhoneLog(db.Model):
     
 class StopLocation(GeoModel):
     stopID       = db.StringProperty()
+    routeID      = db.StringProperty()
     intersection = db.StringProperty()
     direction    = db.StringProperty()
 ## end StopLocation    
@@ -68,5 +69,14 @@ class DeveloperKeys(db.Model):
     developerEmail = db.EmailProperty()
     requestCounter = db.IntegerProperty()
     errorCounter   = db.IntegerProperty()
+## end DeveloperKeys
 
+class ParseErrors(db.Model):
+    dateAdded = db.DateTimeProperty(auto_now_add=True)
+    intersection = db.StringProperty()
+    location = db.GeoPtProperty()
+    direction = db.StringProperty()
+    metaStringOne = db.TextProperty()
+    metaStringTwo = db.TextProperty()
+## end ParseErrors
     
