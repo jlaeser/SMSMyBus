@@ -6,7 +6,6 @@ import re
 
 from google.appengine.api import users
 from google.appengine.api import memcache
-from google.appengine.api import datastore_errors
 from google.appengine.api.urlfetch import DownloadError
 from google.appengine.api.labs import taskqueue
 from google.appengine.api.labs.taskqueue import Task
@@ -14,9 +13,8 @@ from google.appengine.ext import webapp
 from google.appengine.ext import db
 
 from google.appengine.runtime import apiproxy_errors
-from api.v1 import utils
-
-import data_model
+import bus
+import utils
         
 class MainHandler(webapp.RequestHandler):
     
@@ -32,24 +30,49 @@ class MainHandler(webapp.RequestHandler):
           return
       
       # snare the inputs
-      stopID = self.request.get('stopID')
       routeID = self.request.get('routeID')
-      vehicleID = self.request.get('vehicleID')
-      logging.debug('getarrivals request parameters...  stopID %s routeID %s vehicleID %s' % (stopID,routeID,vehicleID))
+      destination = self.request.get('destination')
+      logging.debug('getstops request parameters...  routeID %s destination %s' % (routeID,destination))
       
-      # stopID requests...
-      if stopID is not '' and routeID is '':
-          logging.debug("stop request")
-          xml = stopRequest(stopID, devStoreKey)
-      elif stopID is not '' and routeID is not '':
-          logging.debug("stop route request")
-          xml = stopRouteRequest(stopID, routeID, devStoreKey)
-      elif routeID is not '' and vehicleID is not '':
-          logging.debug("route vehicle request")
-          xml = routeVehicleRequest(routeID, vehicleID, devStoreKey)
-      else:
-          logging.debug("invalid request")
-          xml = buildXMLErrorResponse()
+      xml = '<SMSMyBusResponse><status>0</status>'
+      xml += '<timestamp>'+getLocalTimestamp()+'</timestamp>'
+      xml += '<stop><stopID>'+stopID+'</stopID>'
+    
+      # query the stoplocationID
+      q = db.GqlQuery("SELECT * FROM LiveRouteStatus WHERE stopID = :1 ORDER BY dateAdded DESC LIMIT 24", stopID)
+      routes = q.fetch(24)
+    
+      # run through the results and only preserve three results per route
+      filter_routes = {}
+      routes_min = []
+      for r in routes:
+          if r.routeID in filter_routes:
+              if filter_routes[r.routeID] < 3:
+                  logging.debug("found another route entry for %s" % r.arrivalTime)
+                  filter_routes[r.routeID] += 1
+                  routes_min.append(r)
+          else:
+              logging.debug("found first route entry for route %s" % r.routeID)
+              filter_routes[r.routeID] = 1
+              routes_min.append(r)
+
+                    
+      for r in routes_min:
+          if r == routes_min[0]:
+              if r.stopLocation.location is not None:
+                  xml += '<lat>'+str(r.stopLocation.location.lat)+'</lat><lon>'+str(r.stopLocation.location.lon)+'</lon>'
+              else:
+                  xml += '<lat>unknown</lat><lon>unknown</lon>'
+              xml += '<intersection>'+r.intersection.replace('&','/')+'</intersection>'
+          xml += '<route><routeID>'+r.routeID+'</routeID>'
+          xml += '<vehicleID>unknown</vehicleID>'
+          xml += '<minutes>'+str(computeCountdownMinutes(r.arrivalTime))+'</minutes>'
+          xml += '<arrivalTime>'+r.arrivalTime+'</arrivalTime>'
+          xml += '<destination>'+r.destination+'</destination>'
+          xml += '<direction>'+r.routeQualifier+'</direction>'
+          xml += '</route>'
+      # end for
+      xml += '</stop></SMSMyBusResponse>'
 
       self.response.headers['Content-Type'] = 'text/xml'
       self.response.out.write(xml)
@@ -64,27 +87,16 @@ def buildXMLErrorResponse():
 def validateRequest(request):
     
     # validate the key
-    devStoreKey = utils.validateDevKey(request.get('key'))
+    devStoreKey = validateDevKey(request.get('key'))
     if devStoreKey is None:
         return None
-    stopID = request.get('stopID')
     routeID = request.get('routeID')
-    vehicleID = request.get('vehicleID')
+    destination = request.get('destination')
     
     # a stopID or routeID is required
-    if stopID is None and routeID is None:
+    if routeID is None:
         return None
-    
-    # the routeID requires either a vehicleID or stopID
-    if routeID is not None:
-        if vehicleID is None and stopID is None:
-            return None
-    
-    # the vehicleID requires a routeID
-    if vehicleID is not None:
-        if routeID is None:
-            return False
-        
+            
     logging.debug("successfully validated command parameters")
     return devStoreKey
 
@@ -95,7 +107,7 @@ def stopRequest(stopID, devStoreKey):
     logging.debug("Stop Request started")
     
     xml = '<SMSMyBusResponse><status>0</status>'
-    xml += '<timestamp>'+utils.getLocalTimestamp()+'</timestamp>'
+    xml += '<timestamp>'+getLocalTimestamp()+'</timestamp>'
     xml += '<stop><stopID>'+stopID+'</stopID>'
     
     # query the live route store by stopID
@@ -109,34 +121,24 @@ def stopRequest(stopID, devStoreKey):
         if r.routeID in filter_routes:
             if filter_routes[r.routeID] < 3:
                 logging.debug("found another route entry for %s" % r.arrivalTime)
-                if utils.inthepast(r.arrivalTime):
-                    logging.info("... but it's in the past so ignore it")
-                else:
-                    filter_routes[r.routeID] += 1
-                    routes_min.append(r)
-        elif utils.inthepast(r.arrivalTime) is False:
-            logging.debug("found first route entry for route %s at %s" % (r.routeID,r.arrivalTime))
+                filter_routes[r.routeID] += 1
+                routes_min.append(r)
+        else:
+            logging.debug("found first route entry for route %s" % r.routeID)
             filter_routes[r.routeID] = 1
             routes_min.append(r)
 
                     
     for r in routes_min:
         if r == routes_min[0]:
-            try:
-                if r.stopLocation.location is not None:
-                    xml += '<lat>'+str(r.stopLocation.location.lat)+'</lat><lon>'+str(r.stopLocation.location.lon)+'</lon>'
-                else:
-                    xml += '<lat>unknown</lat><lon>unknown</lon>'
-            except datastore_errors.Error,e:
-                if e.args[0] == "ReferenceProperty failed to be resolved":
-                    xml += '<lat>unknown</lat><lon>unknown</lon>'
-                else:
-                    raise
-                
+            if r.stopLocation.location is not None:
+                xml += '<lat>'+str(r.stopLocation.location.lat)+'</lat><lon>'+str(r.stopLocation.location.lon)+'</lon>'
+            else:
+                xml += '<lat>unknown</lat><lon>unknown</lon>'
             xml += '<intersection>'+r.intersection.replace('&','/')+'</intersection>'
         xml += '<route><routeID>'+r.routeID+'</routeID>'
         xml += '<vehicleID>unknown</vehicleID>'
-        xml += '<minutes>'+str(utils.computeCountdownMinutes(r.arrivalTime))+'</minutes>'
+        xml += '<minutes>'+str(computeCountdownMinutes(r.arrivalTime))+'</minutes>'
         xml += '<arrivalTime>'+r.arrivalTime+'</arrivalTime>'
         xml += '<destination>'+r.destination+'</destination>'
         xml += '<direction>'+r.routeQualifier+'</direction>'
@@ -154,7 +156,7 @@ def stopRouteRequest(stopID, routeID, devStoreKey):
     logging.debug("Stop/Route Request started")
     
     xml = '<SMSMyBusResponse><status>0</status>'
-    xml += '<timestamp>'+utils.getLocalTimestamp()+'</timestamp>'
+    xml += '<timestamp>'+getLocalTimestamp()+'</timestamp>'
     xml += '<stop><stopID>'+stopID+'</stopID>'
     
     # query the live route store by stopID
@@ -166,7 +168,7 @@ def stopRouteRequest(stopID, routeID, devStoreKey):
             xml += '<intersection>'+r.intersection.replace('&','/')+'</intersection>'
         xml += '<route><routeID>'+r.routeID+'</routeID>'
         xml += '<vehicleID>unknown</vehicleID>'
-        xml += '<minutes>'+str(utils.computeCountdownMinutes(r.arrivalTime))+'</minutes>'
+        xml += '<minutes>'+str(computeCountdownMinutes(r.arrivalTime))+'</minutes>'
         xml += '<arrivalTime>'+r.arrivalTime+'</arrivalTime>'
         xml += '<destination>'+r.destination+'</destination>'
         xml += '<direction>'+r.routeQualifier+'</direction>'
@@ -183,7 +185,7 @@ def routeVehicleRequest(routeID, vehicleID, devStoreKey):
     logging.debug("Route/Vehicle Request started for %s, route %s vehicle %s" % (devStoreKey,routeID,vehicleID))
     
     xml = '<SMSMyBusResponse><status>0</status>'
-    xml += '<timestamp>'+utils.getLocalTimestamp()+'</timestamp>'
+    xml += '<timestamp>'+getLocalTimestamp()+'</timestamp>'
     xml += '<route><routeID>'+routeID+'</routeID>'
     
     # query the live route store by routeID and vehicleID
@@ -204,23 +206,9 @@ def routeVehicleRequest(routeID, vehicleID, devStoreKey):
 ## end stopRouteRequest()
 
 
-class DevKeyHandler(webapp.RequestHandler):
-    def get(self):
-        dev = DeveloperKeys()
-        dev.developerName = "Testing"
-        dev.developerKey = "nomar"
-        dev.developerEmail = "non"
-        dev.requestCounter = 0
-        dev.errorCounter = 0
-        dev.put()
-        
-## end DevKeyHandler
-
-
 def main():
   logging.getLogger().setLevel(logging.DEBUG)
-  application = webapp.WSGIApplication([('/api/v1/getarrivals', MainHandler),
-                                        ('/api/v1/createdevkey', DevKeyHandler),
+  application = webapp.WSGIApplication([('/api/v1/getstops', MainHandler),
                                         ],
                                        debug=True)
   wsgiref.handlers.CGIHandler().run(application)

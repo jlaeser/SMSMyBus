@@ -1,8 +1,12 @@
 cron:
 - description: aggregation table cleaner
   url: /cleandb
-  schedule: every 30 minutes
+  schedule: every 15 minutes
 
+- description: clean live route status
+  url: /crawl/clean/LiveRouteStatus
+  schedule: every 15 minutes
+  
 - description: fetch web service data by stop
   url: /rest/prefetch/1878/
   schedule: every 1 minutes

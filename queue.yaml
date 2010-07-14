@@ -1,6 +1,6 @@
 queue:
 - name: crawler
-  rate: 5/s
+  rate: 50/s
   bucket_size: 1
 
 - name: phonelogger
@@ -17,4 +17,12 @@ queue:
 
 - name: smssender
   rate: 1/s
+  bucket_size: 1
+
+- name: crawlerrors
+  rate: 50/s
+  bucket_size: 1
+
+- name: stopstorage
+  rate: 50/s
   bucket_size: 1

@@ -52,3 +52,10 @@ indexes:
   - name: stopID
   - name: dateAdded
     direction: desc
+    
+- kind: LiveRouteStatus
+  properties:
+  - name: stopID
+  - name: dateAdded
+    direction: desc
+    
