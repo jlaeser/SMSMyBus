@@ -58,4 +58,6 @@ indexes:
   - name: stopID
   - name: dateAdded
     direction: desc
+  - name: time
+    direction: desc
     

@@ -67,6 +67,7 @@ class CrawlingTaskHandler(webapp.RequestHandler):
 
             # start to interrogate the results
             soup = BeautifulSoup(result.content)
+            stopUpdates = []
             for slot in soup.html.body.findAll("a","ada"):
                 #logging.info("pulling out data from page... %s" % slot)
 
@@ -96,10 +97,12 @@ class CrawlingTaskHandler(webapp.RequestHandler):
                             stop.routeID = routeID
                             stop.intersection = intersection.upper()
                             stop.direction = direction.upper()
-                            stop.put()
+                            stopUpdates.append(stop)  # stop.put()
                             logging.info("added new stop listing MINUS geo location")
                         else:
                             logging.info("already have this stop in the table...")
+                            stopQuery[0].routeID = routeID
+                            stopUpdates.append(stopQuery[0])
                         
                         # pull the route and direction data from the URL
                         #routeData = scrapeURL.split('?')[1]
@@ -142,6 +145,8 @@ class CrawlingTaskHandler(webapp.RequestHandler):
                     #    
                     #    l = DestinationListing.get_or_insert(title, id=directionID, label=title)
 
+            # push the vehicle updates to the datastore
+            db.put(stopUpdates)
                                         
         except apiproxy_errors.DeadlineExceededError:
             logging.error("DeadlineExceededError exception!?")

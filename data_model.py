@@ -50,7 +50,7 @@ class LiveRouteStatus(db.Model):
     intersection = db.StringProperty()
     destination  = db.StringProperty()
     routeQualifier = db.StringProperty()
-    stopLocation = db.ReferenceProperty(StopLocation,collection_name="liveroutes")    
+    stopLocation = db.ReferenceProperty(StopLocation,collection_name="liveroutes")
 ## end LiveRouteStatus
 
 class LiveVehicleStatus(db.Model):

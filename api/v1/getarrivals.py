@@ -89,7 +89,7 @@ def validateRequest(request):
     return devStoreKey
 
 ## end validateRequest()
-
+from operator import attrgetter
 def stopRequest(stopID, devStoreKey):
 
     logging.debug("Stop Request started")
@@ -104,24 +104,26 @@ def stopRequest(stopID, devStoreKey):
     
     # run through the results and only preserve three results per route
     filter_routes = {}
-    routes_min = []
+    route_results = []
     for r in routes:
         if r.routeID in filter_routes:
             if filter_routes[r.routeID] < 3:
                 logging.debug("found another route entry for %s" % r.arrivalTime)
                 if utils.inthepast(r.arrivalTime):
-                    logging.info("... but it's in the past so ignore it")
+                    logging.debug("... but it's in the past so ignore it")
                 else:
                     filter_routes[r.routeID] += 1
-                    routes_min.append(r)
+                    route_results.append(r)
         elif utils.inthepast(r.arrivalTime) is False:
             logging.debug("found first route entry for route %s at %s" % (r.routeID,r.arrivalTime))
             filter_routes[r.routeID] = 1
-            routes_min.append(r)
+            route_results.append(r)
 
-                    
-    for r in routes_min:
-        if r == routes_min[0]:
+    # sort the new list by time
+    logging.debug("sorting the results list...")
+    route_results = sorted(route_results, key=attrgetter('time'))
+    for r in route_results:
+        if r == route_results[0]:
             try:
                 if r.stopLocation.location is not None:
                     xml += '<lat>'+str(r.stopLocation.location.lat)+'</lat><lon>'+str(r.stopLocation.location.lon)+'</lon>'
@@ -134,6 +136,7 @@ def stopRequest(stopID, devStoreKey):
                     raise
                 
             xml += '<intersection>'+r.intersection.replace('&','/')+'</intersection>'
+            
         xml += '<route><routeID>'+r.routeID+'</routeID>'
         xml += '<vehicleID>unknown</vehicleID>'
         xml += '<minutes>'+str(utils.computeCountdownMinutes(r.arrivalTime))+'</minutes>'
