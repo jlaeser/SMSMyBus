@@ -111,7 +111,9 @@ class PrefetchHandler(webapp.RequestHandler):
                 routeQualifier = data.group(6)
             
             statusUpdates = []
+            currentLocation = None
             for s in stops:
+                start = quota.get_request_cpu_usage()
                 #logging.info("Parsing... %s" % s)
                 if s == stops[0]:
                     #logging.info("skipping the first line...")
@@ -126,7 +128,7 @@ class PrefetchHandler(webapp.RequestHandler):
                 else:
                     realLine = s.rstrip()
 
-                data = re.search('(\d+);(\d+\.\d+)\|(-\d+\.\d+)\|(.*?)\|(.*?)\|(\d+:\d+\s\w+)\s(.*)',realLine)
+                data = re.search('(\d+);(\d+\.\d+)\|(-\d+\.\d+)\|(.*?)\|(.*?)\|(\d+:\d+\s\w+)\sTO\s(.*)',realLine)
                 if data is not None:
                     #logging.info("Parsed NEW STOP... %s" % realLine)
                     routeToken = data.group(1)
@@ -141,7 +143,7 @@ class PrefetchHandler(webapp.RequestHandler):
                         intersection = stopDetails.group(1)
                         stopID = stopDetails.group(2)
                     elif stopID == '0':
-                        logging.error("Error parsing NEW STOP... %s" % realLine)
+                        logging.info("Unable to parse stopID from the line... %s" % realLine)
                         stopID = findStopID(intersection,destination,lat,lon)
                         if stopID is None:
                             # create a task event to process the error
@@ -169,7 +171,8 @@ class PrefetchHandler(webapp.RequestHandler):
                     status.intersection = intersection
                     status.destination = destination
                     status.routeQualifier = routeQualifier
-                    status.stopLocation = getLocation(lat,lon,stopID)
+                    currentLocation = getLocation(lat,lon,stopID)
+                    status.stopLocation = currentLocation
                     status.time = getAbsoluteTime(arrivalEstimate)
 
                     # commit to datastore
@@ -190,7 +193,7 @@ class PrefetchHandler(webapp.RequestHandler):
                         status.intersection = intersection
                         status.destination = destination
                         status.routeQualifier = data.group(2)
-                        status.stopLocation = getLocation(lat,lon,stopID)
+                        status.stopLocation = currentLocation
                         statusUpdates.append(status)
                         #status.put()
                         
@@ -198,11 +201,21 @@ class PrefetchHandler(webapp.RequestHandler):
                     #logging.debug("we're parsing details for a specific vehicle %s" % realLine)
                     vehicleStats.append(realLine)
                 else:
-                    logging.error("bogus route entry line. we have no idea what to do with it! %s" % realLine)
-                      
+                    logging.info("bogus route entry line. we have no idea what to do with it! %s" % realLine)
+                
+                ## end for-stops loop
+
+            end = quota.get_request_cpu_usage()
+            logging.info("looping through every stop took %s cycles" % (end-start))
+            logging.info("now storing %s stop records" % len(statusUpdates))
+      
             # push the status updates to the datastore
             db.put(statusUpdates)
+            store_end = quota.get_request_cpu_usage()
+            logging.info("storing results took %s cycles" % (store_end-end))
                       
+            start = quota.get_request_cpu_usage()
+
             # parse the vehicle detail data we collected...
             vehicleUpdates = []
             lat = '0'
@@ -276,9 +289,15 @@ class PrefetchHandler(webapp.RequestHandler):
                         else:
                             logging.error("VEHICLE SCAN: invalid timepoint entry!!")
 
+            end = quota.get_request_cpu_usage()
+            logging.info("analyzing vehicles took %s cycles" % (end-start))
+
             # push the vehicle updates to the datastore
             db.put(vehicleUpdates)
-            
+
+            store_end = quota.get_request_cpu_usage()
+            logging.info("storing vehicle results took %s cycles" % (store_end-end))
+
         except apiproxy_errors.DeadlineExceededError:
             logging.error("DeadlineExceededError exception!?")
             return
@@ -307,6 +326,7 @@ class CrawlerCleanerHandler(webapp.RequestHandler):
         results = q.fetch(500)
         while results:
             db.delete(results)
+            logging.info("one delete call for %s complete..." % table)
             results = q.fetch(500, len(results))
             
 ## end CrawlerCleanerHandler
@@ -314,7 +334,7 @@ class CrawlerCleanerHandler(webapp.RequestHandler):
 class ErrorTaskHandler(webapp.RequestHandler):
     def post(self):
         
-        result = db.GqlQuery("SELECT __key__ from ParseErrors where intersection = :1", self.request.get('intersection')).get()
+        result = db.GqlQuery("SELECT __key__ from ParseErrors where intersection = :1 and direction = :2", self.request.get('intersection'),self.request.get('direction')).get()
         if result is None:
           error = ParseErrors()
           error.intersection = self.request.get('intersection')
@@ -343,7 +363,8 @@ def findStopID(intersection,direction,lat,lon):
             logging.debug("adding stop %s to memcache" % stopID)
             memcache.set(cacheKey,stopID)
         else:
-            logging.error("impossible! we couldn't find this intersection, x%sx x%sx, in the datastore" % (intersection,location))
+            logging.info("impossible! we couldn't find this intersection, x%sx x%sx, in the datastore" % (intersection,location))
+            memcache.set(cacheKey,'0')
     
     return stopID
 
@@ -357,7 +378,7 @@ def getLocation(lat,lon,stopID):
     # in some cases, for some unknown reason, i'll use the a 
     # concatenated string of lat/long
     
-    logging.debug("fetching stop location for stop %s : %s,%s" % (stopID, lat,lon))
+    #logging.debug("fetching stop location for stop %s : %s,%s" % (stopID, lat,lon))
     geoString = lat+","+lon
 
         
@@ -368,13 +389,13 @@ def getLocation(lat,lon,stopID):
                                      stopID).get()
         else:
             location = GeoPt(lat,lon)
-            stopEntity = db.GqlQuery("SELECT * FROM StopLocation where location = :1",
-                                     location).get()
+            #stopEntity = db.GqlQuery("SELECT * FROM StopLocation where location = :1",
+            #                         location).get()
 
         if stopEntity is not None:
             memcache.set(geoString, db.model_to_protobuf(stopEntity).Encode())
         else:
-            logging.error("Unable to getLocation for this stop %s,%s" % (lat,lon))
+            logging.debug("Unable to getLocation for this stop %s at %s,%s" % (stopID,lat,lon))
     
     else:
         stopEntity = db.model_from_protobuf(entity_pb.EntityProto(stopEntity))
@@ -392,16 +413,17 @@ def getAbsoluteTime(timestamp):
     hours = int(timestamp.split(':')[0])
     if timestamp.find('PM') > 0 and int(hours) < 12:
         hours += 12
-        minutes = int(timestamp.split(':')[1].split()[0])
-        arrivalMinutes = (hours * 60) + minutes
-        #logging.debug("chop up produced %s hours and %s minutes - %s" % (hours,minutes,arrivalMinutes))
+
+    minutes = int(timestamp.split(':')[1].split()[0])
+    arrivalMinutes = (hours * 60) + minutes
+    #logging.debug("... produced %s hours and %s minutes - %s" % (hours,minutes,arrivalMinutes))
         
     return arrivalMinutes
 ## end getAbsoluteTime()
 
 
 def main():
-  logging.getLogger().setLevel(logging.DEBUG)
+  logging.getLogger().setLevel(logging.INFO)
   application = webapp.WSGIApplication([('/crawl/prefetch/(.*)', PrefetchHandler),
                                         ('/crawl/clean/(.*)', CrawlerCleanerHandler),
                                         ('/crawl/errortask', ErrorTaskHandler),],
