@@ -12,6 +12,7 @@ from google.appengine.api.labs import taskqueue
 from google.appengine.api.labs.taskqueue import Task
 from google.appengine.api.urlfetch import DownloadError
 from google.appengine.ext import webapp
+from google.appengine.ext.webapp.util import run_wsgi_app
 from google.appengine.ext import db
 from google.appengine.datastore import entity_pb
 from google.appengine.ext.db import GeoPt
@@ -112,8 +113,24 @@ class PrefetchHandler(webapp.RequestHandler):
             
             statusUpdates = []
             currentLocation = None
+            rxMaster = re.compile('(\d+);(\d+\.\d+)\|(-\d+\.\d+)\|(.*?)\|(.*?)\|(\d+:\d+\s\w+)\sTO\s(.*)')
+            rxChild = re.compile('(\d+:\d+\s\w+)\s+TO\s+(.*)')
+            start = quota.get_request_cpu_usage()
+            
+            # grab the map of stoplocations from the memcache for this route
+            routeLocations = memcache.get(routeID)
+            
+            if routeLocations is None:
+                logging.info("unable to find a cached copy of this route's locations!?")
+                routeLocations = []
+                stopLocations = None
+            else:
+                start_multiGet = quota.get_request_cpu_usage()
+                stopLocations = memcache.get_multi(routeLocations)
+                end_multiGet = quota.get_request_cpu_usage()
+                logging.info("Reading all of the stopLocations from the memcache took %s cycles" % (end_multiGet-start_multiGet))
+                
             for s in stops:
-                start = quota.get_request_cpu_usage()
                 #logging.info("Parsing... %s" % s)
                 if s == stops[0]:
                     #logging.info("skipping the first line...")
@@ -128,12 +145,22 @@ class PrefetchHandler(webapp.RequestHandler):
                 else:
                     realLine = s.rstrip()
 
-                data = re.search('(\d+);(\d+\.\d+)\|(-\d+\.\d+)\|(.*?)\|(.*?)\|(\d+:\d+\s\w+)\sTO\s(.*)',realLine)
+                start_parse = quota.get_request_cpu_usage()
+                data = re.search(rxMaster,realLine)
+                locationKey = lat+","+lon
                 if data is not None:
                     #logging.info("Parsed NEW STOP... %s" % realLine)
                     routeToken = data.group(1)
                     lat = data.group(2)
                     lon = data.group(3)
+                    routeLocations.append(locationKey)
+                    if stopLocations is None:
+                        currentLocation = None #getLocation(lat,lon,stopID)
+                    else:
+                        if locationKey in stopLocations:
+                            currentLocation = None #db.model_from_protobuf(entity_pb.EntityProto(stopLocations[locationKey]))
+                        else:
+                            currentLocation = None #getLocation(lat,lon,stopID)
                     
                     # hack... the stop ID isn't always encoded. check to see if we need to pull it out
                     intersection = data.group(4)
@@ -144,7 +171,14 @@ class PrefetchHandler(webapp.RequestHandler):
                         stopID = stopDetails.group(2)
                     elif stopID == '0':
                         logging.info("Unable to parse stopID from the line... %s" % realLine)
-                        stopID = findStopID(intersection,destination,lat,lon)
+                        if currentLocation is None:
+                            logging.info("... failed to find cached copy of the stopID")
+                            stopID = findStopID(intersection,destination,lat,lon)
+                        else:
+                            stopID = currentLocation.stopID
+                            
+                        end_search = quota.get_request_cpu_usage()
+                        logging.info("stop id parsing took %s cycles" % (end_search-start_parse))
                         if stopID is None:
                             # create a task event to process the error
                             task = Task(url='/crawl/errortask', params={'intersection':intersection,
@@ -158,11 +192,10 @@ class PrefetchHandler(webapp.RequestHandler):
 
                         stopID = '0' if stopID is None else stopID
                         logging.debug("extracted stop ID %s using intersection %s, direction %s" % (stopID,intersection,destination))
-                        
+                    
                     destination = data.group(5)
                     arrivalEstimate = data.group(6)
                     routeQualifier = data.group(7)
-                    #logging.info("%s + %s + %s + %s + %s + %s + %s + %s" % (routeToken,lat,lon,intersection,stopID,destination,arrivalEstimate,destination))
                     status = LiveRouteStatus()
                     status.routeToken = routeToken
                     status.routeID = routeID
@@ -171,17 +204,17 @@ class PrefetchHandler(webapp.RequestHandler):
                     status.intersection = intersection
                     status.destination = destination
                     status.routeQualifier = routeQualifier
-                    currentLocation = getLocation(lat,lon,stopID)
-                    status.stopLocation = currentLocation
+                    #status.stopLocation = currentLocation
                     status.time = getAbsoluteTime(arrivalEstimate)
 
                     # commit to datastore
                     statusUpdates.append(status)
                     #status.put()
                     
+                    
                 elif re.search('^\d+:\d+',realLine) is not None:
                     #logging.debug("we're assuming this is a timestamp line for stopID %s" % stopID)
-                    data = re.search('(\d+:\d+\s\w+)\s+TO\s+(.*)',realLine)
+                    data = re.search(rxChild,realLine)
                     if data is not None:
                         #logging.info("%s + %s" % (data.group(1),data.group(2)))
                         status = LiveRouteStatus()
@@ -193,10 +226,10 @@ class PrefetchHandler(webapp.RequestHandler):
                         status.intersection = intersection
                         status.destination = destination
                         status.routeQualifier = data.group(2)
-                        status.stopLocation = currentLocation
+                        #status.stopLocation = currentLocation
                         statusUpdates.append(status)
                         #status.put()
-                        
+                    
                 elif realLine.endswith(';') is False:
                     #logging.debug("we're parsing details for a specific vehicle %s" % realLine)
                     vehicleStats.append(realLine)
@@ -253,6 +286,7 @@ class PrefetchHandler(webapp.RequestHandler):
                             if vehicle is None:
                                 #logging.debug("NEW BUS!")
                                 vehicle = LiveVehicleStatus()
+                                
                             vehicle.routeID = routeID
                             vehicle.vehicleID = vehicleID
                             vehicle.location = GeoPt(lat,lon)
@@ -295,7 +329,12 @@ class PrefetchHandler(webapp.RequestHandler):
             # push the vehicle updates to the datastore
             db.put(vehicleUpdates)
 
+            # cache the geolocations for this route
+            cache_routeStops = quota.get_request_cpu_usage()
+            memcache.set(('route:'+routeID),routeLocations)
+            
             store_end = quota.get_request_cpu_usage()
+            logging.info("caching route's %s stops took %s cycles" % (routeID,(store_end-cache_routeStops)))
             logging.info("storing vehicle results took %s cycles" % (store_end-end))
 
         except apiproxy_errors.DeadlineExceededError:
@@ -315,6 +354,15 @@ class CrawlerCheckHandler(webapp.RequestHandler):
 
 class CrawlerCleanerHandler(webapp.RequestHandler):
     def get(self,table=""):
+        # don't run these jobs during "off" hours
+        ltime = time.localtime()
+        ltime_hour = ltime.tm_hour - 5
+        ltime_hour += 24 if ltime_hour < 0 else 0
+        if ltime_hour <=24 and ltime_hour > 6:
+            logging.info("choosing not to run cleaner at %s" % ltime_hour)
+            self.response.out.write('offline')
+            return
+
         hourAgo = timedelta(hours=1)
         logging.info("hour ago... %s",hourAgo)
         timestamp = datetime.now() - hourAgo
@@ -323,11 +371,11 @@ class CrawlerCleanerHandler(webapp.RequestHandler):
         qstring = "select __key__ from " + table + " where dateAdded < :1"
         logging.info("crawler cleaning :: query string is... %s" % qstring)
         q = db.GqlQuery(qstring,timestamp)
-        results = q.fetch(500)
+        results = q.fetch(300)
         while results:
             db.delete(results)
             logging.info("one delete call for %s complete..." % table)
-            results = q.fetch(500, len(results))
+            results = q.fetch(300, len(results))
             
 ## end CrawlerCleanerHandler
 
@@ -378,17 +426,21 @@ def getLocation(lat,lon,stopID):
     # in some cases, for some unknown reason, i'll use the a 
     # concatenated string of lat/long
     
+    start_method = quota.get_request_cpu_usage()
     #logging.debug("fetching stop location for stop %s : %s,%s" % (stopID, lat,lon))
     geoString = lat+","+lon
 
-        
     stopEntity = memcache.get(geoString)
+    end_method = quota.get_request_cpu_usage()
+    logging.info("getLocation's memcache call took %s cycles" % (end_method-start_method))
     if stopEntity is None:
         if stopID != '0':
+            logging.info("unable to find cached location... query for it now")
             stopEntity = db.GqlQuery("SELECT * FROM StopLocation where stopID = :1",
                                      stopID).get()
         else:
-            location = GeoPt(lat,lon)
+            return None
+            #location = GeoPt(lat,lon)
             #stopEntity = db.GqlQuery("SELECT * FROM StopLocation where location = :1",
             #                         location).get()
 
@@ -428,7 +480,8 @@ def main():
                                         ('/crawl/clean/(.*)', CrawlerCleanerHandler),
                                         ('/crawl/errortask', ErrorTaskHandler),],
                                        debug=True)
-  wsgiref.handlers.CGIHandler().run(application)
+  #wsgiref.handlers.CGIHandler().run(application)
+  run_wsgi_app(application)
 
 
 if __name__ == '__main__':
