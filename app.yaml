@@ -71,7 +71,11 @@ handlers:
 - url: /rest/prefetch/.*
   script: rest.py
   login: admin
-  
+
+# AppStats interface
+- url: /stats.*
+  script: $PYTHON_LIB/google/appengine/ext/appstats/ui.py
+    
 #
 # ADMIN access
 #      
