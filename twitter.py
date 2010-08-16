@@ -23,7 +23,7 @@ BOTKEY = 'D56CE348-FEC4-4432-9005110B2D25A9D3'
 class TwitterHandler(webapp.RequestHandler):
     def post(self):
         if self.request.get('channel').lower() != 'private':
-            logging.debug("Someone (%s) tried to send a public Twitter request with, %s" % (self.request.get('user'),requestBody))
+            logging.debug("Someone (%s) tried to send a public Twitter request with, %s" % (self.request.get('user'),self.request.get('msg')))
             return
 
         user = self.request.get('user')

@@ -237,7 +237,7 @@ class TestHandler(webapp.RequestHandler):
 ## end TestHandler
 
 def main():
-  logging.getLogger().setLevel(logging.ERROR)
+  logging.getLogger().setLevel(logging.DEBUG)
   application = webapp.WSGIApplication([('/rest/prefetch/(.*)/', PrefetchHandler),
                                         ('/rest/test/', TestHandler),
                                         ('/rest/(.*)/(.*)/', RouteRequestHandler),

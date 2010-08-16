@@ -28,6 +28,7 @@ ROUTE_URLBASE = "http://webwatch.cityofmadison.com/webwatch/UpdateWebMap.aspx?u=
 
 class PrefetchHandler(webapp.RequestHandler):
     def get(self, routeID=""):
+
         # don't run these jobs during "off" hours
         ltime = time.localtime()
         ltime_hour = ltime.tm_hour - 5
@@ -57,7 +58,7 @@ class PrefetchHandler(webapp.RequestHandler):
                         time.sleep(4)
                         loop = loop+1
             end = quota.get_request_cpu_usage()
-            logging.info("scraping took %s cycles" % (end-start))
+            logging.warning("scraping took %s cycles" % (end-start))
             if not done:
                 logging.error("prefecth failed... couldn't fetch the URL %s" % scrapeURL)
                 return
@@ -112,24 +113,20 @@ class PrefetchHandler(webapp.RequestHandler):
                 routeQualifier = data.group(6)
             
             statusUpdates = []
-            currentLocation = None
+            stopIDListChange = False
+            findStop_total = 0
             rxMaster = re.compile('(\d+);(\d+\.\d+)\|(-\d+\.\d+)\|(.*?)\|(.*?)\|(\d+:\d+\s\w+)\sTO\s(.*)')
             rxChild = re.compile('(\d+:\d+\s\w+)\s+TO\s+(.*)')
             start = quota.get_request_cpu_usage()
-            
-            # grab the map of stoplocations from the memcache for this route
-            routeLocations = memcache.get(routeID)
-            
-            if routeLocations is None:
-                logging.info("unable to find a cached copy of this route's locations!?")
-                routeLocations = []
-                stopLocations = None
-            else:
-                start_multiGet = quota.get_request_cpu_usage()
-                stopLocations = memcache.get_multi(routeLocations)
-                end_multiGet = quota.get_request_cpu_usage()
-                logging.info("Reading all of the stopLocations from the memcache took %s cycles" % (end_multiGet-start_multiGet))
-                
+            start_api = quota.get_request_api_cpu_usage()
+                            
+            stopIDList = memcache.get(routeID)
+            if stopIDList is None:
+                stopIDList = {}
+            eL = quota.get_request_cpu_usage()
+            eapiL = quota.get_request_api_cpu_usage()
+            logging.warning("grabbing cached copy of the stopIDs took %s CPU cycles" % (eL-start))
+            logging.warning("... and %s API cycles" % (eapiL-start_api))
             for s in stops:
                 #logging.info("Parsing... %s" % s)
                 if s == stops[0]:
@@ -147,20 +144,12 @@ class PrefetchHandler(webapp.RequestHandler):
 
                 start_parse = quota.get_request_cpu_usage()
                 data = re.search(rxMaster,realLine)
-                locationKey = lat+","+lon
                 if data is not None:
                     #logging.info("Parsed NEW STOP... %s" % realLine)
                     routeToken = data.group(1)
                     lat = data.group(2)
                     lon = data.group(3)
-                    routeLocations.append(locationKey)
-                    if stopLocations is None:
-                        currentLocation = None #getLocation(lat,lon,stopID)
-                    else:
-                        if locationKey in stopLocations:
-                            currentLocation = None #db.model_from_protobuf(entity_pb.EntityProto(stopLocations[locationKey]))
-                        else:
-                            currentLocation = None #getLocation(lat,lon,stopID)
+                    locationKey = lat+","+lon
                     
                     # hack... the stop ID isn't always encoded. check to see if we need to pull it out
                     intersection = data.group(4)
@@ -171,27 +160,21 @@ class PrefetchHandler(webapp.RequestHandler):
                         stopID = stopDetails.group(2)
                     elif stopID == '0':
                         logging.info("Unable to parse stopID from the line... %s" % realLine)
-                        if currentLocation is None:
-                            logging.info("... failed to find cached copy of the stopID")
+                        start_search = quota.get_request_cpu_usage()
+                        if locationKey not in stopIDList:
                             stopID = findStopID(intersection,destination,lat,lon)
+                            stopIDList[locationKey] = stopID
+                            stopIDListChange = True
                         else:
-                            stopID = currentLocation.stopID
-                            
+                            stopID = stopIDList[locationKey]
                         end_search = quota.get_request_cpu_usage()
-                        logging.info("stop id parsing took %s cycles" % (end_search-start_parse))
-                        if stopID is None:
-                            # create a task event to process the error
-                            task = Task(url='/crawl/errortask', params={'intersection':intersection,
-                                                                        'location':(lat+","+lon),
-                                                                        'direction':destination,
-                                                                        'metaStringOne':realLine,
-                                                                        'metaStringTwo':'empty'
-                                                                        })
-                            task.add('crawlerrors')
-                            logging.debug("Added new error logging task for %s" % realLine)
+                        logging.warning("stop id (%s) parsing took %s cycles" % (stopID,(end_search-start_search)))
+                        findStop_total += (end_search-start_search)
 
                         stopID = '0' if stopID is None else stopID
                         logging.debug("extracted stop ID %s using intersection %s, direction %s" % (stopID,intersection,destination))
+                    # no else clause here because in that case we already have 
+                    # the stopID from the previous loop iteration
                     
                     destination = data.group(5)
                     arrivalEstimate = data.group(6)
@@ -204,7 +187,7 @@ class PrefetchHandler(webapp.RequestHandler):
                     status.intersection = intersection
                     status.destination = destination
                     status.routeQualifier = routeQualifier
-                    #status.stopLocation = currentLocation
+                    status.stopLocation = None
                     status.time = getAbsoluteTime(arrivalEstimate)
 
                     # commit to datastore
@@ -226,7 +209,7 @@ class PrefetchHandler(webapp.RequestHandler):
                         status.intersection = intersection
                         status.destination = destination
                         status.routeQualifier = data.group(2)
-                        #status.stopLocation = currentLocation
+                        status.stopLocation = None
                         statusUpdates.append(status)
                         #status.put()
                     
@@ -238,18 +221,27 @@ class PrefetchHandler(webapp.RequestHandler):
                 
                 ## end for-stops loop
 
+            if stopIDListChange:
+                start_memcache = quota.get_request_cpu_usage()
+                memcache.set(routeID,stopIDList)
+                end_memcache = quota.get_request_cpu_usage()
+                logging.warning("stop id (%s) parsing took %s cycles" % (stopID,(end_memcache-start_memcache)))
+
             end = quota.get_request_cpu_usage()
-            logging.info("looping through every stop took %s cycles" % (end-start))
-            logging.info("now storing %s stop records" % len(statusUpdates))
+            end_api = quota.get_request_api_cpu_usage()
+            logging.warning("finding stopIDs for %s stops took %s CPU cycles" % (len(stops),findStop_total))
+            logging.warning("looping through %s stops took %s CPU cycles" % (len(stops),(end-start)))
+            logging.warning("looping through %s stops took %s API cycles" % (len(stops),(end_api-start_api)))
       
             # push the status updates to the datastore
             db.put(statusUpdates)
             store_end = quota.get_request_cpu_usage()
-            logging.info("storing results took %s cycles" % (store_end-end))
-                      
-            start = quota.get_request_cpu_usage()
-
+            store_api_end = quota.get_request_api_cpu_usage()
+            logging.warning("storing %s results took %s cycles" % (len(statusUpdates),(store_end-end)))
+            logging.warning("... and %s API cycles" % (store_api_end-end_api))
+            
             # parse the vehicle detail data we collected...
+            start_vehicle = quota.get_request_cpu_usage()
             vehicleUpdates = []
             lat = '0'
             lon = '0'
@@ -314,7 +306,6 @@ class PrefetchHandler(webapp.RequestHandler):
                             vehicle.nextTimepoint = data.group(1)
                             #logging.info("adding new vehicle (2)... %s at %s" % (vehicleID,vehicle.location))
                             vehicleUpdates.append(vehicle)
-                            #vehicle.put()
 
                             # now reset lat/lon for the next loop iteration
                             lat = data.group(2)
@@ -323,23 +314,21 @@ class PrefetchHandler(webapp.RequestHandler):
                         else:
                             logging.error("VEHICLE SCAN: invalid timepoint entry!!")
 
-            end = quota.get_request_cpu_usage()
-            logging.info("analyzing vehicles took %s cycles" % (end-start))
+            end_vehicle = quota.get_request_cpu_usage()
+            logging.info("analyzing vehicles took %s cycles" % (end_vehicle-start_vehicle))
 
             # push the vehicle updates to the datastore
             db.put(vehicleUpdates)
-
-            # cache the geolocations for this route
-            cache_routeStops = quota.get_request_cpu_usage()
-            memcache.set(('route:'+routeID),routeLocations)
-            
-            store_end = quota.get_request_cpu_usage()
-            logging.info("caching route's %s stops took %s cycles" % (routeID,(store_end-cache_routeStops)))
-            logging.info("storing vehicle results took %s cycles" % (store_end-end))
+            logging.warning("storing vehicle results took %s cycles" % (end_vehicle-store_end))
 
         except apiproxy_errors.DeadlineExceededError:
             logging.error("DeadlineExceededError exception!?")
             return
+        
+        finally:
+            prefetch_api = quota.get_request_api_cpu_usage()
+            prefetch_cpu = quota.get_request_cpu_usage()
+            logging.warning("total API cycles %s, total CPU cycles %s" % (prefetch_api,prefetch_cpu))
         
         return
     
@@ -399,20 +388,19 @@ class ErrorTaskHandler(webapp.RequestHandler):
 def findStopID(intersection,direction,lat,lon):
     
     intersection = intersection.upper()
-    cacheKey = intersection+":"+direction
-    stopID = memcache.get(cacheKey)
-    if stopID is None:
-        #stop = db.GqlQuery("SELECT * FROM StopLocation WHERE intersection = :1 and direction = :2", intersection, direction).get()
-        #stop = db.GqlQuery("SELECT * FROM StopLocation WHERE intersection = :1", intersection).get()
-        location = GeoPt(lat,lon)
-        stop = db.GqlQuery("SELECT * FROM StopLocation WHERE location = :1", location).get()
-        if stop is not None:
-            stopID = stop.stopID
-            logging.debug("adding stop %s to memcache" % stopID)
-            memcache.set(cacheKey,stopID)
-        else:
-            logging.info("impossible! we couldn't find this intersection, x%sx x%sx, in the datastore" % (intersection,location))
-            memcache.set(cacheKey,'0')
+    #cacheKey = intersection+":"+direction
+    #stopID = memcache.get(cacheKey)
+    #if stopID is None:
+    location = GeoPt(lat,lon)
+    stop = db.GqlQuery("SELECT * FROM StopLocation WHERE location = :1", location).get()
+    if stop is not None:
+        stopID = stop.stopID
+        #logging.debug("adding stop %s to memcache" % stopID)
+        #memcache.set(cacheKey,stopID)
+    else:
+        stopID = None
+        logging.info("impossible! we couldn't find this intersection, x%sx x%sx, in the datastore" % (intersection,location))
+        #memcache.set(cacheKey,'0')
     
     return stopID
 
@@ -474,9 +462,25 @@ def getAbsoluteTime(timestamp):
 ## end getAbsoluteTime()
 
 
+class PrefetcTwohHandler(webapp.RequestHandler):
+    def get(self, routeID=""):
+
+        # don't run these jobs during "off" hours
+        ltime = time.localtime()
+        ltime_hour = ltime.tm_hour - 5
+        ltime_hour += 24 if ltime_hour < 0 else 0
+        if ltime_hour > 1 and ltime_hour < 6:
+            self.response.out.write('offline')
+            return
+
+        try:
+            scrapeURL = ROUTE_URLBASE + routeID
+## end
+
 def main():
   logging.getLogger().setLevel(logging.INFO)
   application = webapp.WSGIApplication([('/crawl/prefetch/(.*)', PrefetchHandler),
+                                        ('/crawl/prefetch2/(.*)', PrefetchTwoHandler),
                                         ('/crawl/clean/(.*)', CrawlerCleanerHandler),
                                         ('/crawl/errortask', ErrorTaskHandler),],
                                        debug=True)

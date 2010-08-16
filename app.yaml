@@ -24,6 +24,10 @@ handlers:
   static_files: motherfools/index-api.html
   upload: motherfools/index-api.html
     
+- url: /supranet.*
+  static_files: supranet/index.html
+  upload: supranet/index.html
+
 - url: /dashboard
   static_files: dashboard.html
   upload: dashboard.html
