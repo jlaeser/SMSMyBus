@@ -11,6 +11,10 @@ cron:
   url: /rest/prefetch/1505/
   schedule: every 1 minutes
   
+- description: fetch web service data by stop
+  url: /rest/prefetch/6490/
+  schedule: every 1 minutes
+
 - description: clean route status table
   url: /crawl/clean/LiveRouteStatus
   schedule: every 15 minutes
@@ -18,10 +22,4 @@ cron:
 - description: live route status for 3
   url: /crawl/prefetch/03
   schedule: every 2 minutes
-  
-- description: live route status for 4
-  url: /crawl/prefetch/04
-  schedule: every 2 minutes
-  
-  
   
