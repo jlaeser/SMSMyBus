@@ -259,7 +259,7 @@
           	   //routeID = $("route",xml).text();  //oldAPI
           	   stopDispID = $("stop",xml).text();
       	      timestamp = $("timestamp",xml).text();
-          	   $("#"+stopID+"-estimates").replaceWith('<div id="'+stopID+'-estimates" class="estimates"><span class="direction">'+Direction+'</span><div class="subhead"> &nbsp; &nbsp; Next buses at Few on Ingersoll per Metro '+timestamp+' estimate</div>');
+          	   $("#"+stopID+"-estimates").replaceWith('<div id="'+stopID+'-estimates" class="estimates"><span class="direction">'+Direction+'</span><div class="subhead"> &nbsp; &nbsp; Next buse at Excelsior at Old Sauk per Metro '+timestamp+' estimate</div>');
           	   i=0; //row index, will be counting numbers      	   
       	       $("route",xml).each(function(id) {
           	       var routeID = $(this).find('routeID').text();
@@ -284,7 +284,7 @@
           //Note: this is now stupid, make the document.ready call a named function
           //alert("refresh");
           updateClock();
-          refreshTimes('6490', 'Eastbound');
+          refreshTimes('6490', 'Towards Capital Square');
           //refreshTimes('1878', 'Westbound >>');
 	   });
     </script>
@@ -293,7 +293,7 @@
     <script type="text/javascript">
       $(document).ready(function() {
           updateClock();
-          refreshTimes('6490', 'Eastbound');
+          refreshTimes('6490', 'Towards Capital Square');
           //refreshTimes('1878', 'Westbound >>');
       });
     </script>

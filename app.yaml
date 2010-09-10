@@ -1,5 +1,5 @@
 application: smsmybus
-version: 13
+version: 15
 runtime: python
 api_version: 1
 
@@ -141,6 +141,22 @@ handlers:
 - url: /api/
   static_files: api/index.html
   upload: api/index.html
+
+- url: /api/locations.html
+  static_files: api/locations.html
+  upload: api/locations.html
+
+- url: /api/notifications.html
+  static_files: api/notifications.html
+  upload: api/notifications.html
+    
+- url: /api/routes.html
+  static_files: api/routes.html
+  upload: api/routes.html
+  
+- url: /api/schedule.html
+  static_files: api/schedule.html
+  upload: api/schedule.html
   
 - url: /api/style.css
   static_files: api/style.css

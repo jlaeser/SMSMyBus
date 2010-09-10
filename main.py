@@ -179,6 +179,7 @@ class RequestHandler(webapp.RequestHandler):
       if len(requestArgs) == 1:
           # assume single argument requests are for a bus stop
           bus.aggregateBuses(smsBody,self.request.get('SmsSid'),self.request.get('From'))
+          #bus.aggregateBusesAsynch(smsBody,self.request.get('SmsSid'),self.request.get('From'))
           return
 
       # pull the route and stopID out of the request body and
@@ -496,10 +497,16 @@ def sendXmppResponse(user, textBody):
 
 ## end sendXmppResponse()
 
-            
+class AsynchRequestHandler(webapp.RequestHandler):
+    def get(self):
+        bus.aggregateBusesAsynch('1505','%Greg','empty')
+        self.response.out.write("done")
+        
+        
 def main():
   logging.getLogger().setLevel(logging.INFO)
   application = webapp.WSGIApplication([('/', MainHandler),
+                                        ('/arequest', AsynchRequestHandler),
                                         ('/request', RequestHandler),
                                         ('/dashboard/(.*)/(.*)', DashboardHandler),
                                         ('/_ah/mail/.+', EmailRequestHandler),

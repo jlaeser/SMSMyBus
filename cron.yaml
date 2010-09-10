@@ -15,11 +15,6 @@ cron:
   url: /rest/prefetch/6490/
   schedule: every 1 minutes
 
-- description: clean route status table
+- description: clean up live route status table
   url: /crawl/clean/LiveRouteStatus
-  schedule: every 15 minutes
-  
-- description: live route status for 3
-  url: /crawl/prefetch/03
-  schedule: every 2 minutes
-  
+  schedule: every 45 minutes
