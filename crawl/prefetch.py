@@ -347,21 +347,22 @@ class CrawlerCleanerHandler(webapp.RequestHandler):
         ltime = time.localtime()
         ltime_hour = ltime.tm_hour - 5
         ltime_hour += 24 if ltime_hour < 0 else 0
-        if ltime_hour <=24 and ltime_hour > 6:
+        if ltime_hour > 1 and ltime_hour < 6:
             logging.info("choosing not to run cleaner at %s" % ltime_hour)
-            self.response.out.write('offline')
-            return
+            #self.response.out.write('offline')
+            #return
 
         hourAgo = timedelta(hours=1)
         logging.info("hour ago... %s",hourAgo)
         timestamp = datetime.now() - hourAgo
         logging.info("current time... %s",datetime.now())
         logging.info("timestamp for query... %s",timestamp)
-        qstring = "select __key__ from " + table + " where dateAdded < :1"
+        qstring = "select __key__ from " + table + " where dateAdded < :1 LIMIT 1800"
         logging.info("crawler cleaning :: query string is... %s" % qstring)
         q = db.GqlQuery(qstring,timestamp)
         results = q.fetch(300)
-        while results:
+        #while results:
+        for i in range(0,5):
             db.delete(results)
             logging.info("one delete call for %s complete..." % table)
             results = q.fetch(300, len(results))
@@ -462,7 +463,7 @@ def getAbsoluteTime(timestamp):
 ## end getAbsoluteTime()
 
 
-class PrefetcTwohHandler(webapp.RequestHandler):
+class PrefetchTwoHandler(webapp.RequestHandler):
     def get(self, routeID=""):
 
         # don't run these jobs during "off" hours
@@ -473,8 +474,29 @@ class PrefetcTwohHandler(webapp.RequestHandler):
             self.response.out.write('offline')
             return
 
+        # asynchronous URL fetch calls for every route running through this stop
+        rpcs = []
+        # @todo: memcache these!
+        q = db.GqlQuery("SELECT * FROM RouteListing WHERE stopID = :1",stopID)
+        routeQuery = q.fetch(100)
+        if len(routeQuery) == 0:
+            # this should never ever happen
+            logging.error("Huh? There are no matching stops for this ID?!? %s" % stopID)
+            return
+        else:
+            for r in routeQuery:
+                rpc = urlfetch.create_rpc()
+                urlfetch.make_fetch_call(rpc, r.scheduleURL)
+                rpcs.append(rpc)
+
+        
+        
         try:
             scrapeURL = ROUTE_URLBASE + routeID
+        except:
+            logging.error("ugh. couldn't load the route URL %s" % scrapeURL)
+            
+            
 ## end
 
 def main():
