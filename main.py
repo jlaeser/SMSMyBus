@@ -36,10 +36,11 @@ from BeautifulSoup import BeautifulSoup, Tag
 
 ACCOUNT_SID = "AC781064d8f9b6bd4621333d6226768a9f"
 ACCOUNT_TOKEN = "5ec48a82949b90511c78c1967a04998d"
-SALT_KEY = '2J86APQ0JIE81FA2NVMC48JXQS3F6VNC'
-API_VERSION = '2008-08-01'
+API_VERSION = '2010-04-01'
 CALLER_ID = '6084671603'
 #CALLER_ID = '4155992671'
+
+ABUSERS = ['6303020318','6083152344',]
 
 class MainHandler(webapp.RequestHandler):
 
@@ -170,6 +171,23 @@ class RequestHandler(webapp.RequestHandler):
           sendInvite(self.request)
           return
       
+      # filter the troublemakers
+      caller = self.request.get('From')
+      if caller in ABUSERS:
+          counter = memcache.get(caller)
+          if counter is None:
+              memcache.set(caller,1)
+          elif int(counter) <= 3:
+              memcache.incr(caller,1)
+          else:
+              # create an event to log the event
+              task = Task(url='/loggingtask', params={'phone':self.request.get('From'),
+                                              'inboundBody':self.request.get('Body'),
+                                              'sid':self.request.get('SmsSid'),
+                                              'outboundBody':'exceeded quota',})
+              task.add('phonelogger')
+              return
+          
       # there are two valid formats for requests
       # <route> <stop id> : returns the next bus for that stop
       # <stop id> : returns the next N buses for that stop
