@@ -369,23 +369,6 @@ class CrawlerCleanerHandler(webapp.RequestHandler):
             
 ## end CrawlerCleanerHandler
 
-class ErrorTaskHandler(webapp.RequestHandler):
-    def post(self):
-        
-        result = db.GqlQuery("SELECT __key__ from ParseErrors where intersection = :1 and direction = :2", self.request.get('intersection'),self.request.get('direction')).get()
-        if result is None:
-          error = ParseErrors()
-          error.intersection = self.request.get('intersection')
-          location = self.request.get('location').split(',')
-          error.location = GeoPt(location[0],location[1])
-          error.direction = self.request.get('direction')
-          error.metaStringOne = self.request.get('metaStringOne')
-          error.metaStringTwo = self.request.get('metaStringTwo')
-          error.put()
-
-## end ErrorTaskHandler
-
-
 def findStopID(intersection,direction,lat,lon):
     
     intersection = intersection.upper()
@@ -464,7 +447,7 @@ def getAbsoluteTime(timestamp):
 
 
 class PrefetchTwoHandler(webapp.RequestHandler):
-    def get(self, routeID=""):
+    def get(self, stopID=""):
 
         # don't run these jobs during "off" hours
         ltime = time.localtime()
@@ -488,10 +471,20 @@ class PrefetchTwoHandler(webapp.RequestHandler):
                 rpc = urlfetch.create_rpc()
                 urlfetch.make_fetch_call(rpc, r.scheduleURL)
                 rpcs.append(rpc)
-
-        
         
         try:
+            # run through each URL fetch...
+            # 1. scrape results
+            # 2. add each arrival estimate to the list
+            for rpc in rpcs:
+                result = rpc.get_result()
+                if result.status_code == 22:
+                    bus.aggregateBusesAsynch('1505','%Greg','empty')
+                else:
+                    logging.error("URL fetch failed! Bummer, we won't include this result.")
+                
+            # when all URLs fetches have been processed...
+            # 1. sort the results list by time
             scrapeURL = ROUTE_URLBASE + routeID
         except:
             logging.error("ugh. couldn't load the route URL %s" % scrapeURL)
@@ -504,7 +497,7 @@ def main():
   application = webapp.WSGIApplication([('/crawl/prefetch/(.*)', PrefetchHandler),
                                         ('/crawl/prefetch2/(.*)', PrefetchTwoHandler),
                                         ('/crawl/clean/(.*)', CrawlerCleanerHandler),
-                                        ('/crawl/errortask', ErrorTaskHandler),],
+                                        ],
                                        debug=True)
   #wsgiref.handlers.CGIHandler().run(application)
   run_wsgi_app(application)
