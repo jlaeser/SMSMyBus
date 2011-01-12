@@ -1,5 +1,5 @@
 application: smsmybus
-version: 15
+version: 17
 runtime: python
 api_version: 1
 
@@ -16,6 +16,22 @@ handlers:
   static_files: index.html
   upload: index.html
 
+- url: /gadgets
+  static_dir: gadgets
+  
+- url: /js
+  static_dir: js
+  
+- url: /css
+  static_dir: css
+  
+- url: /labs/map
+  script: labs/mapit.py
+
+- url: /labs/maptask
+  script: labs/mapit.py
+  login: admin
+  
 - url: /motherfools
   static_files: motherfools/index.html
   upload: motherfools/index.html
@@ -27,6 +43,10 @@ handlers:
 - url: /supranet.*
   static_files: supranet/index.html
   upload: supranet/index.html
+  
+- url: /sector67.*
+  static_files: sector67/index.html
+  upload: sector67/index.html
 
 - url: /dashboard
   static_files: dashboard.html
@@ -39,14 +59,6 @@ handlers:
 - url: /img/(.*)
   static_files: img/\1
   upload: img/(.*)
-  
-- url: /style.css
-  static_files: style.css
-  upload: style.css
-
-- url: /jquery.timers-1.2.js
-  static_files: jquery.timers-1.2.js
-  upload: jquery.timers-1.2.js
   
 - url: /favicon.ico
   static_files: img/favicon.ico
@@ -109,29 +121,9 @@ handlers:
 # data CRAWLER access
 #
 - url: /crawl/.*
-  script: crawl/prefetch.py
+  script: crawl/crawl-stop-locations.py
   login: admin
 
-- url: /configure
-  script: crawl/crawler.py
-  login: admin
-
-- url: /configuregeo
-  script: crawl/crawler.py
-  login: admin
-
-- url: /storethestop
-  script: crawl/crawler.py
-  login: admin
-    
-- url: /crawlingtask
-  script: crawl/crawler.py
-  login: admin
-  
-- url: /crawlinggeotask
-  script: crawl/crawler.py
-  login: admin
-  
 - url: /routelist/.*
   script: crawl/crawler.py
   login: admin
