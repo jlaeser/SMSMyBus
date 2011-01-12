@@ -156,106 +156,6 @@ class CrawlingTaskHandler(webapp.RequestHandler):
     
 ## end CrawlingTask()
 
-
-class CrawlGeoHandler(webapp.RequestHandler):
-    def get(self):
-        crawlURL = "http://webwatch.cityofmadison.com/webwatch/Ada.aspx"
-        task = Task(url='/crawlinggeotask', params={'crawl':crawlURL,})
-        task.add('crawler')
-        logging.info("Added new task for %s" % crawlURL)        
-        return
-    
-        
-class CrawlingGeoTaskHandler(webapp.RequestHandler):
-    def post(self):
-        try:
-            scrapeURL = self.request.get('crawl')
-            logging.debug("task scraping for %s" % scrapeURL)
-            
-            loop = 0
-            done = False
-            result = None
-            start = quota.get_request_cpu_usage()
-            while not done and loop < 3:
-                try:
-                    # fetch the page
-                    result = urlfetch.fetch(scrapeURL)
-                    done = True;
-                except urlfetch.DownloadError:
-                    logging.info("Error loading page (%s)... sleeping" % loop)
-                    if result:
-                        logging.debug("Error status: %s" % result.status_code)
-                        logging.debug("Error header: %s" % result.headers)
-                        logging.debug("Error content: %s" % result.content)
-                        time.sleep(4)
-                        loop = loop+1
-            end = quota.get_request_cpu_usage()
-            logging.info("scraping took %s cycles" % (end-start))
-
-            if result.content[0] == '7':
-                # parser for the geo stop data...
-                stops = result.content.split('<br>')
-                for s in stops:
-                    #logging.info("Parsing... %s" % s)
-                    if s[0] == '|':
-                        # |18;43.0656205|-89.4237496|ALLEN & COMMONWEALTH [ID#2969]|CapSq|3:20 PM TO CAP SQR
-                        data = re.search('\|\d+;.*?(4.*?)\|(.*?)\|(.*?)\[ID#(\d+)\]\|(.*?)\|',s)
-                        if data is None:
-                            # |32;43.0527923|-89.43559|Monroe & Glenway|Allied-Chalet|2:40 PM TO ALLD DR:MOHAWK
-                            data = re.search('\|\d+;.*?(4.*?)\|(.*?)\|(.*?)\|(.*?)\|',s)
-                            if data is not None:
-                                latitude = data.group(1).strip()
-                                longitude = data.group(2).strip()
-                                intersection = data.group(3).strip()
-                                direction = data.group(4).strip()
-                        else:
-                            latitude = data.group(1).strip()
-                            longitude = data.group(2).strip()
-                            intersection = data.group(3).strip()
-                            stopID = data.group(4).strip()
-                            direction = data.group(5).strip()
-                                                            
-                        if data is not None:
-                            logging.debug("creating task to store this stop in the datastore...")
-                            # create a task event to process the data and check/store in the datastore
-                            task = Task(url='/storethestop', params={'intersection':intersection,
-                                                                     'latitude':latitude,
-                                                                     'longitude':longitude,
-                                                                     'direction':direction,
-                                                                     'crawlLine':s,
-                                                                    })
-                            task.add('stopstorage')
-                            
- 
-                return
-            
-            # start to interrogate the results
-            soup = BeautifulSoup(result.content)
-            for slot in soup.html.body.findAll("a","ada"):
-                logging.info("pulling out data from page... %s" % slot)
-
-                if slot.has_key('href'):
-                    href = slot['href']
-                    title = slot['title']
-                    logging.info("FOUND A TITLE ----> %s" % title)
-                    # route crawler looks for titles with an ID# string
-                    if title.find("[ID#") > 0:
-                        # this should never happen
-                        logging("FATAL ERROR")
-                    elif href.find("?r=") > -1:
-                        crawlURL = "http://webwatch.cityofmadison.com/webwatch/UpdateWebMap.aspx?u="+href.split("=")[1]
-                        task = Task(url='/crawlinggeotask', params={'crawl':crawlURL,})
-                        task.add('crawler')
-                        logging.info("Added new task for %s" % crawlURL)
-
-        except apiproxy_errors.DeadlineExceededError:
-            logging.error("DeadlineExceededError exception!?")
-            return
-            
-        return;
-    
-## end
-
 class DropTableHandler(webapp.RequestHandler):
     def get(self, table=""):
         qstring = "select * from " + table
@@ -281,55 +181,12 @@ class DropTableHandler(webapp.RequestHandler):
             results = q.fetch(500, len(results))
 
 ## end
-    
-class StopStorageHandler(webapp.RequestHandler):
-    def post(self):
-        intersection = self.request.get('intersection')
-        latitude = self.request.get('latitude')
-        longitude = self.request.get('longitude')
-        direction = self.request.get('direction')
-        logging.info("storing intersection %s at lat/lon %s,%s toward %s" % (intersection,latitude,longitude,direction))
-        
-        if len(intersection) > 400:
-            intersection = intersection.ljust(400)
-            
-        q = db.GqlQuery("SELECT * FROM StopLocation WHERE intersection = :1 AND direction = :2", intersection.upper(),direction.upper())
-        stop = q.get()
-        if stop is None:
-            logging.debug("We DON'T already have this stop in the store!?! %s to %s" % (intersection.upper(),direction.upper()))
-            # create a task event to process the error
-            task = Task(url='/crawl/errortask', params={'intersection':intersection,
-                                                        'location':(latitude+","+longitude),
-                                                        'direction':direction,
-                                                        'metaStringOne':self.request.get('crawlLine'),
-                                                        'metaStringTwo':'from geotask crawler'
-                                                      })
-            task.add('crawlerrors')
-        else:
-            stop.location = GeoPt(latitude,longitude)
-            stop.update_location()
-            #stop.direction = direction
-            stop.put()
-            logging.info("GEO DATA ADDED for %s" % intersection)
-                                
-            # update the route table to include a reference to the new geo data
-            q = db.GqlQuery("SELECT * FROM RouteListing WHERE stopID = :1", stop.stopID)
-            route = q.get()
-            if route is None:
-                logging.error("IMPOSSIBLE... no stop on record?!? %s", stop.stopID)
-            else:
-                logging.debug("updating RouteListing with this stop... %s" % stop.key())
-                route.stopLocation = stop
-                route.put()
 
-        return
-    
-## end
     
 class RouteListHandler(webapp.RequestHandler):
     def get(self,routeID=""):
       logging.info("fetching all stop locations for route %s" % routeID)
-      q = db.GqlQuery("SELECT * FROM RouteListing WHERE route = :1", routeID)
+      q = db.GqlQuery("SELECT * FROM StopLocation WHERE routeID = :1", routeID)
       if q is not None:
           results = []
           
@@ -338,18 +195,18 @@ class RouteListHandler(webapp.RequestHandler):
           logging.info("running through stop location list....")
           for s in stops:
               logging.debug("fetch route list details for stop %s" % s.stopID)
-              try:
-                  sLocation = s.stopLocation
-              except datastore_errors.Error,e:
-                  if e.args[0] == "ReferenceProperty failed to be resolved":
-                      sLocation = None
-                  else:
-                      raise
+#              try:
+#                  sLocation = s.stopLocation
+#              except datastore_errors.Error,e:
+#                  if e.args[0] == "ReferenceProperty failed to be resolved":
+#                      sLocation = None
+#                  else:
+#                      raise
                   
               results.append({'stopID':s.stopID,
-                              'location':sLocation if sLocation is not None else 'unknown',
-                              'intersection':sLocation.intersection if sLocation is not None else 'unknown',
-                              'direction':sLocation.direction if sLocation is not None else 'unknown',
+                              #'location':sLocation if sLocation is not None else 'unknown',
+                              'intersection':s.intersection,# if sLocation is not None else 'unknown',
+                              'direction':s.direction,# if sLocation is not None else 'unknown',
                               'routeID':routeID,
                               })
               
@@ -368,10 +225,7 @@ class RouteListHandler(webapp.RequestHandler):
 def main():
   logging.getLogger().setLevel(logging.DEBUG)
   application = webapp.WSGIApplication([('/configure', CrawlerHandler),
-                                        ('/configuregeo', CrawlGeoHandler),
                                         ('/crawlingtask', CrawlingTaskHandler),
-                                        ('/crawlinggeotask', CrawlingGeoTaskHandler),
-                                        ('/storethestop', StopStorageHandler),
                                         ('/routelist/(.*)', RouteListHandler),
                                         ('/droptable/(.*)', DropTableHandler),
                                         ],
