@@ -9,7 +9,7 @@ class PhoneLog(db.Model):
   outboundSMS = db.StringProperty(multiline=True)
 ## end phoneLog
 
-    
+# note that a stop extends GeoModel   
 class StopLocation(GeoModel):
     stopID       = db.StringProperty()
     routeID      = db.StringProperty()
@@ -76,7 +76,10 @@ class ParseErrors(db.Model):
     intersection = db.StringProperty()
     location = db.GeoPtProperty()
     direction = db.StringProperty()
+    routeID = db.StringProperty()
+    stopID = db.StringProperty()
     metaStringOne = db.TextProperty()
     metaStringTwo = db.TextProperty()
+    reviewed = db.BooleanProperty()
 ## end ParseErrors
     
