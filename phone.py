@@ -22,8 +22,8 @@ API_VERSION = '2008-08-01'
 CALLER_ID = '6084671603'
 #CALLER_ID = '4155992671'
 
-URL_BASE = 'http://7.latest.smsmybus.appspot.com/'
-#URL_BASE = 'http://smsmybus.appspot.com/'
+#URL_BASE = 'http://7.latest.smsmybus.appspot.com/'
+URL_BASE = 'http://smsmybus.appspot.com/'
 
 class PhoneRequestStartHandler(webapp.RequestHandler):
     

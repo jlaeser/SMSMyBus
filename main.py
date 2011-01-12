@@ -342,7 +342,7 @@ class AggregationSMSHandler(webapp.RequestHandler):
           for r in routeQuery:
               textBody += "Route %s " % r.routeID + " %s" % r.text + "\n"
       else:
-          logging.error("We couldn't find this SMS transaction information %s. Chances are there aren't any matches with the request." % sid)
+          logging.debug("We couldn't find this SMS transaction information %s. Chances are there aren't any matches with the request." % sid)
           textBody = "Doesn't look good... Your bus isn't running right now!"
         
       if phone.find('@') > -1 and phone.find('/') > -1:
@@ -383,7 +383,7 @@ class AggregationSMSHandler(webapp.RequestHandler):
       return
   
 ## end AggregationSMSHandler
-
+    
 class AggregationHandler(webapp.RequestHandler):
     def post(self):
         sid = self.request.get('sid')
@@ -463,6 +463,13 @@ class AggregationHandler(webapp.RequestHandler):
     
 ## end AggregationHandler
 
+class ResetQuotaHandler(webapp.RequestHandler):
+    def get(self):
+        logging.info("deleting the memcached quotas for the day...")
+        memcache.delete_multi(ABUSERS)
+        self.response.set_status(200)
+        return
+        
 def sendInvite(request):
     
       textBody = "You've been invited to use SMSMyBus to find real-time arrivals for your buses. Text your bus stop to this number to get started.(invited by " 
@@ -533,7 +540,8 @@ def main():
                                         ('/aggregationtask', AggregationHandler),
                                         ('/aggregationSMStask', AggregationSMSHandler),
                                         ('/loggingtask', PhoneLogEventHandler),
-                                        ('/sendsmstask', SendSMSHandler)
+                                        ('/sendsmstask', SendSMSHandler),
+                                        ('/resetquotas', ResetQuotaHandler),
                                         ],
                                        debug=True)
   wsgiref.handlers.CGIHandler().run(application)
