@@ -38,10 +38,11 @@ class AdminHandler(webapp.RequestHandler):
               q.with_cursor(cursor)
 
           # Perform the query to get 500 results.
-          log_events = q.fetch(500)
-          cursor = q.cursor()
+          #log_events = q.fetch(500)
+          #cursor = q.cursor()
 
           logQuery = q.fetch(500)
+          cursor = q.cursor()
           if len(logQuery) > 0:
             total += len(logQuery)
             logging.debug('parsing log entries %s' % total)
@@ -51,24 +52,38 @@ class AdminHandler(webapp.RequestHandler):
                 else:
                     callers[e.phone] = 1
                     
-                if e.body in reqs:
-                    reqs[e.body] += 1
-                else:
-                    reqs[e.body] = 1
+                # add up all of the unique stop IDs
+                requestString = e.body.split()
+                if len(requestString) >= 2:
+                    stopID = requestString[1]
+                elif len(requestString) > 0:
+                    stopID = requestString[0]
+                    
+                if len(requestString) > 0 and stopID.isdigit() and len(stopID) == 4:
+                    if stopID in reqs:
+                        reqs[stopID] += 1
+                    else:
+                        reqs[stopID] = 1
           else:
               logging.debug('nothing left!')
               break
 
-      # revew the results and generate the data for the template
+      # review the results and generate the data for the template
       caller_stats = []
       sorted_callers = callers.items()
       sorted_callers.sort(key=itemgetter(1),reverse=True)
       for key,value in sorted_callers:
-          logging.debug("caller stat... %s : %s" % (key,value))
           caller_stats.append({'caller':key,
                                'counter':value,
                              })
       uniques = len(sorted_callers)
+      
+      # review the results for popular stops
+      stops_stats = []
+      for key,value in reqs.items():
+          stops_stats.append({'stopID':key,
+                              'count':value,
+                              })
       
       # display some recent call history
       results = []
@@ -92,7 +107,9 @@ class AdminHandler(webapp.RequestHandler):
                          'total':total,
                          'uniques':uniques,
                          'callers':caller_stats,
-                         'events':results}
+                         'events':results,
+                         'stopList':stops_stats,
+                         }
         
       # create a page that provides a form for sending an SMS message
       path = os.path.join(os.path.dirname(__file__), 'admin.html')
