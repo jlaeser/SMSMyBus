@@ -3,12 +3,12 @@ queue:
   rate: 50/s
   bucket_size: 1
 
-- name: phonelogger
+- name: eventlogger
   rate: 5/s
   bucket_size: 1
 
 - name: aggregation
-  rate: 20/s
+  rate: 50/s
   bucket_size: 1
 
 - name: aggregationSMS

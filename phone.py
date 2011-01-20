@@ -124,7 +124,7 @@ class PhoneRequestStopHandler(webapp.RequestHandler):
                                               'inboundBody':input,
                                               'sid':self.request.get('SmsSid'),
                                               'outboundBody':textBody,})
-      task.add('phonelogger')
+      task.add('eventlogger')
 
       # transform the text a smidge so it can be pronounced more easily...
       # 1. strip the colons

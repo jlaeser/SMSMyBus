@@ -1,5 +1,5 @@
 application: smsmybus
-version: 17
+version: 18
 runtime: python
 api_version: 1
 
@@ -25,33 +25,6 @@ handlers:
 - url: /css
   static_dir: css
   
-- url: /labs/map
-  script: labs/mapit.py
-
-- url: /labs/maptask
-  script: labs/mapit.py
-  login: admin
-  
-- url: /motherfools
-  static_files: motherfools/index.html
-  upload: motherfools/index.html
-
-- url: /motherfools/index-api.html
-  static_files: motherfools/index-api.html
-  upload: motherfools/index-api.html
-    
-- url: /supranet.*
-  static_files: supranet/index.html
-  upload: supranet/index.html
-  
-- url: /sector67.*
-  static_files: sector67/index.html
-  upload: sector67/index.html
-
-- url: /dashboard
-  static_files: dashboard.html
-  upload: dashboard.html
-  
 - url: /_ah/mail/.+
   script: main.py
   login: admin
@@ -71,7 +44,10 @@ handlers:
 - url: /robots.txt
   static_files: robots.txt
   upload: robots.txt
-  
+
+- url: /aggr/.*
+  script: aggregator/aggregation.py
+    
 - url: /loggingtask
   script: main.py
   login: admin
@@ -130,41 +106,36 @@ handlers:
 
 #
 # API access
-- url: /api/
-  static_files: api/index.html
-  upload: api/index.html
-
-- url: /api/locations.html
-  static_files: api/locations.html
-  upload: api/locations.html
-
-- url: /api/notifications.html
-  static_files: api/notifications.html
-  upload: api/notifications.html
-    
-- url: /api/routes.html
-  static_files: api/routes.html
-  upload: api/routes.html
-  
-- url: /api/schedule.html
-  static_files: api/schedule.html
-  upload: api/schedule.html
-  
-- url: /api/style.css
-  static_files: api/style.css
-  upload: api/style.css
-  
 - url: /api/v1/getarrivals
   script: api/v1/getarrivals.py
-
-- url: /api/v1/createdevkey
-  script: api/v1/getarrivals.py
-  login: admin
+- url: /api/
+  static_files: api/index.html
+  upload: api/index.html  
+- url: /api
+  static_dir: api
   
 # drop table
 - url: /droptable/.*
   script: crawl/crawler.py
   login: admin
+
+#
+# Custom displays
+- url: /motherfools
+  static_files: motherfools/index.html
+  upload: motherfools/index.html
+
+- url: /motherfools/index-api.html
+  static_files: motherfools/index-api.html
+  upload: motherfools/index-api.html
+    
+- url: /supranet.*
+  static_files: supranet/index.html
+  upload: supranet/index.html
+  
+- url: /sector67.*
+  static_files: sector67/index.html
+  upload: sector67/index.html
   
 #
 # catch all...

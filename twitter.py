@@ -106,7 +106,7 @@ def sendTwitterResponse(handle, textBody, stopID, routeID):
                                                 'inboundBody':'?',
                                                 'sid':'twitter',
                                                 'outboundBody':textBody,})
-          task.add('phonelogger')
+          task.add('eventlogger')
         except urlfetch.DownloadError:
           logging.error("Twitter post call failed but we're going to assume it sent correctly for %s" % handle)
           return

@@ -32,9 +32,12 @@
   <li><a href=/api/notifications.html>Notifications</a></li>
  </ul>
  </div>
- This portion of the web service describes scheduling information. Under <strong>all</strong> circumstances, this is 
+ <p>This portion of the web service describes scheduling information. Under <strong>all</strong> circumstances, this is 
  predictive data. It is based on the real-time information described by the Metro system for each route - not fixed
- schedule information.
+ schedule information.</p>
+ <p>It's important to understand that the API is dependent on the Metro's scheduling service. If the Metro's service is
+ down, so are we. I'm going to do my best to differentiate the difference between "no buses running" and "service unavailable" 
+ but there are no guarantees.</p>
  <hr>
  <h1>getarrivals</h1>
  <div id="spec">
@@ -84,51 +87,48 @@
  The response length is dependent on the particular request parameters. If the status field is 0, the response
  will be grouped by stop and each stop will be grouped by routes traveling through the respective stop.
  <p>The following results example is for a single stopID. </p>
-<code class="prettyprint lang-xml">
-&lt;?xml version=”1.0”?&gt;
-  &lt;SMSMyBusResponse&gt;
-    &lt;status&gt;0&lt;/status&gt;
-    &lt;timestampe&gt;12:38pm&lt;/timestamp&gt;
-    &lt;stop&gt;
-      &lt;stopID&gt;1101&lt;/stopID&gt;
-      &lt;lat&gt;43.0733718&lt;/lat&gt;
-      &lt;lon&gt;-89.3838018&lt;/lon&gt;
-      &lt;intersection&gt;Main & Carroll&lt;/intersection&gt;
-      &lt;route&gt;
-        &lt;routeID&gt;4&lt;/routeID&gt;
-        &lt;vehicleID&gt;993&lt;/vehicle&gt;
-        &lt;human&gt;Route 4 toward STP arrives in 10 minutes&lt;/human&gt;
-        &lt;minutes&gt;10&lt;/minutes&gt;
-        &lt;arrivalTime&gt;12:44pm&lt;/arrivalTime&gt;
-        &lt;destination&gt;STP&lt;/destination&gt;
-      &lt;/route&gt;
-      &lt;route&gt;
-        &lt;routeID&gt;3&lt;/routeID&gt;
-        &lt;vehicleID&gt;433&lt;/vehicle&gt;
-        &lt;human&gt;Route 3 toward ETP arrives in 12 minutes&lt;/human&gt;
-        &lt;minutes&gt;12&lt;/minutes&gt;
-        &lt;arrivalTime&gt;12:46pm&lt;/arrivalTime&gt;
-        &lt;destination&gt;ETP&lt;/destination&gt;
-        &lt;alternate&gt;via Winnebago&lt;/alternate&gt;
-      &lt;/route&gt;
+<code class="prettyprint lang-javascript">
+{
+    "status" : "0",
+    "timestamp" : "12:38pm",
+    "stop" : {
+      "stopID" : "1101",
+      "lat" : "43.0733718",
+      "lon" : "-89.3838018",
+      "intersection" : "Main & Carroll",
+      "route" : {
+        "routeID" : "4",
+        "vehicleID" : "993",
+        "human" : "Route 4 toward STP arrives in 10 minutes</p>
+        "minutes" : "10</p>
+        "arrivalTime" : "12:44pm</p>
+        "destination" : "STP</p>
+      },
+      "route" : {
+        "routeID" : "3"
+        "vehicleID" : "433"
+        "human" : "Route 3 toward ETP arrives in 12 minutes"
+        "minutes" : "12"
+        "arrivalTime" : "12:46pm"
+        "destination" : "ETP"
+      },
       ...
       ...
-    &lt;/stop&gt;
+    },
     ...
     ...
-  &lt;/SMSMyBusResponse&gt;
-  </code>
+}
+</code>
   <p>If a vehicleID is specified, multiple stops will be returned.</p>
  <h3>Error</h3>
  An error is indicated by a non-zero status value. If the status value is non-zero, the description field will be 
  present describing the error in plain English.
  <p> </p>
-<code class="prettyprint lang-xml">
-&lt;?xml version=”1.0”?&gt;
-  &lt;SMSMyBusResponse&gt;
-    &lt;status&gt;-1&lt;/status&gt;
-    &lt;description&gt;Invalid request parameters&lt;/description&gt;	
-  &lt;/SMSMyBusResponse&gt;
+<code class="prettyprint lang-javascript">
+{
+  "status" : "-1",
+  "description" : "Invalid request parameters",	
+}
 </code>
  </div>
  <div id="spacer"></div>

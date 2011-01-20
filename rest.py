@@ -26,7 +26,6 @@ class StopRequestHandler(webapp.RequestHandler):
         self.response.out.write(xml)
         return
 
-      logging.info("looking for stop %s data" % stopID)
       xml = memcache.get(stopID)
       if xml is None:
         logging.info("cache MISS for stop %s data" % stopID)

@@ -14,10 +14,14 @@ from google.appengine.ext import webapp
 from google.appengine.ext import db
 
 from google.appengine.runtime import apiproxy_errors
+
+from django.utils import simplejson
+
 from api.v1 import utils
+from api import asynch
 
 import data_model
-        
+
 class MainHandler(webapp.RequestHandler):
     
     def get(self):
@@ -25,10 +29,8 @@ class MainHandler(webapp.RequestHandler):
       # validate the request parameters
       devStoreKey = validateRequest(self.request)
       if devStoreKey is None:
-          logging.debug("unable to validate the request parameters")
-          xml = buildXMLErrorResponse()
-          self.response.header['Content-Type'] = 'text/xml'
-          self.response.out.write(xml)
+          self.response.headers['Content-Type'] = 'application/javascript'
+          self.response.out.write(simplejson.dumps(utils.buildErrorResponse('-1','Illegal developer key received')))
           return
       
       # snare the inputs
@@ -39,27 +41,21 @@ class MainHandler(webapp.RequestHandler):
       
       # stopID requests...
       if stopID is not '' and routeID is '':
-          logging.debug("stop request")
-          xml = stopRequest(stopID, devStoreKey)
+          response = stopRequest(stopID, devStoreKey)
       elif stopID is not '' and routeID is not '':
-          logging.debug("stop route request")
-          xml = stopRouteRequest(stopID, routeID, devStoreKey)
+          response = stopRouteRequest(stopID, routeID, devStoreKey)
       elif routeID is not '' and vehicleID is not '':
-          logging.debug("route vehicle request")
-          xml = routeVehicleRequest(routeID, vehicleID, devStoreKey)
+          response = routeVehicleRequest(routeID, vehicleID, devStoreKey)
       else:
-          logging.debug("invalid request")
-          xml = buildXMLErrorResponse()
+          logging.debug("API: invalid request")
+          response = utils.buildXMLErrorResponse('-1','Invalid Request parameters')
 
-      self.response.headers['Content-Type'] = 'text/xml'
-      self.response.out.write(xml)
+      # encapsulate response in json
+      logging.debug('API: json response %s' % response);            
+      self.response.headers['Content-Type'] = 'application/javascript'
+      self.response.out.write(simplejson.dumps(response))
 
 ## end RequestHandler
-
-def buildXMLErrorResponse():
-    xml = '<SMSMyBusResponse><status>-1</status><description>Invalid request parameters</description></SMSMyBusResponse>'
-    return xml
-## end
 
 def validateRequest(request):
     
@@ -89,120 +85,94 @@ def validateRequest(request):
     return devStoreKey
 
 ## end validateRequest()
-from operator import attrgetter
 def stopRequest(stopID, devStoreKey):
 
     logging.debug("Stop Request started")
+    response_dict = {'status':'0',
+                     'timestamp':utils.getLocalTimestamp()
+                     }    
     
-    xml = '<SMSMyBusResponse><status>0</status>'
-    xml += '<timestamp>'+utils.getLocalTimestamp()+'</timestamp>'
-    xml += '<stop><stopID>'+stopID+'</stopID>'
+    # @todo the really busy stops have their data cached. hook this up
+    # q = db.GqlQuery("SELECT * FROM LiveRouteStatus WHERE stopID = :1 ORDER BY dateAdded DESC LIMIT 24", stopID)
+    # routes = q.fetch(24)
     
-    # query the live route store by stopID
-    q = db.GqlQuery("SELECT * FROM LiveRouteStatus WHERE stopID = :1 ORDER BY dateAdded DESC LIMIT 24", stopID)
-    routes = q.fetch(24)
+    # got fetch all of the data for this stop
+    sid = stopID + str(devStoreKey) + str(time.time())
+    routes = asynch.aggregateBusesAsynch(sid,stopID)
+
+    # get the stop details
+    stop_dict = {'stopID':stopID,}
     
-    # run through the results and only preserve three results per route
-    filter_routes = {}
+    # take the first 10 results. we assume the results are sorted by time
+    #route_results = sorted(route_results, key=attrgetter('time'))
     route_results = []
     for r in routes:
-        if r.routeID in filter_routes:
-            if filter_routes[r.routeID] < 3:
-                logging.debug("found another route entry for %s" % r.arrivalTime)
-                if utils.inthepast(r.arrivalTime):
-                    logging.debug("... but it's in the past so ignore it")
-                else:
-                    filter_routes[r.routeID] += 1
-                    route_results.append(r)
-        elif utils.inthepast(r.arrivalTime) is False:
-            logging.debug("found first route entry for route %s at %s" % (r.routeID,r.arrivalTime))
-            filter_routes[r.routeID] = 1
-            route_results.append(r)
-
-    # sort the new list by time
-    logging.debug("sorting the results list...")
-    route_results = sorted(route_results, key=attrgetter('time'))
-    for r in route_results:
-        if r == route_results[0]:
-            try:
-                if r.stopLocation.location is not None:
-                    xml += '<lat>'+str(r.stopLocation.location.lat)+'</lat><lon>'+str(r.stopLocation.location.lon)+'</lon>'
-                else:
-                    xml += '<lat>unknown</lat><lon>unknown</lon>'
-            except datastore_errors.Error,e:
-                if e.args[0] == "ReferenceProperty failed to be resolved":
-                    xml += '<lat>unknown</lat><lon>unknown</lon>'
-                else:
-                    raise
-                
-            xml += '<intersection>'+r.intersection.replace('&','/')+'</intersection>'
-            
-        xml += '<route><routeID>'+r.routeID+'</routeID>'
-        xml += '<vehicleID>unknown</vehicleID>'
-        xml += '<minutes>'+str(utils.computeCountdownMinutes(r.arrivalTime))+'</minutes>'
-        xml += '<arrivalTime>'+r.arrivalTime+'</arrivalTime>'
-        xml += '<destination>'+r.destination+'</destination>'
-        xml += '<direction>'+r.routeQualifier+'</direction>'
-        xml += '</route>'
-    # end for
-    xml += '</stop></SMSMyBusResponse>'
+        if not utils.inthepast(r.arrivalTime):
+            route_results.append(dict({'routeID':r.routeID,
+                          'vehicleID':'unknown',
+                          'minutes':str(utils.computeCountdownMinutes(r.arrivalTime)),
+                          'arrivalTime':r.arrivalTime,
+                          'destination':r.destination,
+                          }))            
     
-    logging.debug("Stop Request: %s" % xml)
-    return xml
+    # add the populated stop details to the response
+    stop_dict.update({'route':route_results});
+    response_dict.update({'stop':stop_dict})
+        
+    return response_dict
 
 ## end stopRequest()
 
 
 def stopRouteRequest(stopID, routeID, devStoreKey):
     logging.debug("Stop/Route Request started")
-    
-    xml = '<SMSMyBusResponse><status>0</status>'
-    xml += '<timestamp>'+utils.getLocalTimestamp()+'</timestamp>'
-    xml += '<stop><stopID>'+stopID+'</stopID>'
+
+    # got fetch all of the data for this stop
+    sid = stopID + str(devStoreKey) + str(time.time())
+    routes = asynch.aggregateBusesAsynch(sid,stopID,routeID)
+    if routes is None:
+        response_dict = {'status':'0',
+                         'timestamp':utils.getLocalTimestamp(),
+                         'info':'No routes found'
+                        }
+        return response_dict
     
     # query the live route store by stopID
-    q = db.GqlQuery("SELECT * FROM LiveRouteStatus WHERE stopID = :1 and routeID = :2 ORDER BY dateAdded DESC LIMIT 3", stopID, routeID)
-    routes = q.fetch(3)
-    for r in routes:
-        if r == routes[0]:
-            xml += '<lat>'+str(r.stopLocation.location.lat)+'</lat><lon>'+str(r.stopLocation.location.lon)+'</lon>'
-            xml += '<intersection>'+r.intersection.replace('&','/')+'</intersection>'
-        xml += '<route><routeID>'+r.routeID+'</routeID>'
-        xml += '<vehicleID>unknown</vehicleID>'
-        xml += '<minutes>'+str(utils.computeCountdownMinutes(r.arrivalTime))+'</minutes>'
-        xml += '<arrivalTime>'+r.arrivalTime+'</arrivalTime>'
-        xml += '<destination>'+r.destination+'</destination>'
-        xml += '<direction>'+r.routeQualifier+'</direction>'
-        xml += '</route>'
-    # end for
-    xml += '</stop></SMSMyBusResponse>'
+    #q = db.GqlQuery("SELECT * FROM LiveRouteStatus WHERE stopID = :1 and routeID = :2 ORDER BY dateAdded DESC LIMIT 3", stopID, routeID)
+    #routes = q.fetch(3)
+
+    response_dict = {'status':'0',
+                     'timestamp':utils.getLocalTimestamp()
+                     }    
     
-    logging.debug("Stop/Route Request: %s" % xml)
-    return xml
+    # there should only be results. we assume the results are sorted by time
+    stop_dict = {'stopID':stopID,}
+    route_results = []
+    for r in routes:
+        if not utils.inthepast(r.arrivalTime):
+            route_results.append(dict({'routeID':r.routeID,
+                          'vehicleID':'unknown',
+                          'minutes':str(utils.computeCountdownMinutes(r.arrivalTime)),
+                          'arrivalTime':r.arrivalTime,
+                          'destination':r.destination,
+                          }))
+    
+    # add the populated stop details to the response
+    stop_dict.update({'route':route_results});
+    response_dict.update({'stop':stop_dict})
+        
+    return response_dict
 
 ## end stopRouteRequest()
 
 def routeVehicleRequest(routeID, vehicleID, devStoreKey):
     logging.debug("Route/Vehicle Request started for %s, route %s vehicle %s" % (devStoreKey,routeID,vehicleID))
     
-    xml = '<SMSMyBusResponse><status>0</status>'
-    xml += '<timestamp>'+utils.getLocalTimestamp()+'</timestamp>'
-    xml += '<route><routeID>'+routeID+'</routeID>'
-    
-    # query the live route store by routeID and vehicleID
-    q = db.GqlQuery("SELECT * FROM LiveVehicleStatus WHERE routeID = :1 and vehicleID = :2 ORDER BY dateAdded", routeID,vehicleID)
-    vehicles = q.fetch(10)
-    for v in vehicles:
-        xml += '<vehicle><vehicleID>'+v.vehicleID+'</vehicleID>'
-        xml += '<lat>'+str(v.location.lat)+'</lat><lon>'+str(v.location.lon)+'</lon>'
-        xml += '<nextTimepoint>'+v.nextTimepoint.replace('&','/')+'</nextTimepoint>'
-        xml += '<destination>'+v.destination+'</destination>'
-        xml += '</vehicle>'
-    # end for
-    xml += '</route></SMSMyBusResponse>'
-    
-    logging.debug("Route/Vehicle Request: %s" % xml)
-    return xml
+    # encapsulate response in json
+    return {'status':'-1',
+            'timestamp':getLocalTimestamp(),
+            'description':'Vehicle requests calls are not yet supported',
+           }
 
 ## end stopRouteRequest()
 
