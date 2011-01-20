@@ -260,33 +260,37 @@ class StopStorageHandler(webapp.RequestHandler):
                                                         })
             task.add('crawlerrors')
         else:
-            stop = StopLocation()
-            stop.stopID = stopID
-            stop.routeID = routeID
-            stop.intersection = intersection.upper()
-            stop.direction = direction.upper()
-            stop.location = GeoPt(latitude,longitude)
-            stop.update_location()
-            stop.put()
+            # ignore this stop if we've already stored it
+            # stopID + routeID
+            stop = db.GqlQuery("SELECT * FROM StopLocation WHERE stopID = :1 and routeID = :2", stopID, routeID).get()
+            if stop is None:
+                stop = StopLocation()
+                stop.stopID = stopID
+                stop.routeID = routeID
+                stop.intersection = intersection.upper()
+                stop.direction = direction.upper()
+                stop.location = GeoPt(latitude,longitude)
+                stop.update_location()
+                stop.put()
             
-            # update the route table to include a reference to the new geo data
-            if stopID != '00':
-                route = db.GqlQuery("SELECT * FROM RouteListing WHERE stopID = :1 and route = :2", stopID,routeID).get()
-                if route is None:
-                    logging.error("IMPOSSIBLE... no stop on record?!? stop %s, route %s" % (stopID,routeID))
-                    # create a task event to process the error
-                    task = Task(url='/crawl/errortask', params={'intersection':intersection,
-                                                        'location':(latitude+","+longitude),
-                                                        'direction':direction,
-                                                        'metaStringOne':self.request.get('crawlLine'),
-                                                        'metaStringTwo':'routelisting update',
-                                                        'routeID':routeID,
-                                                        'stopID':stopID,
-                                                        })
-                    task.add('crawlerrors')
-                else:
-                    route.stopLocation = stop
-                    route.put()
+                # update the route table to include a reference to the new geo data
+                if stopID != '00':
+                    route = db.GqlQuery("SELECT * FROM RouteListing WHERE stopID = :1 and route = :2", stopID,routeID).get()
+                    if route is None:
+                        logging.error("IMPOSSIBLE... no stop on record?!? stop %s, route %s" % (stopID,routeID))
+                        # create a task event to process the error
+                        task = Task(url='/crawl/errortask', params={'intersection':intersection,
+                                                            'location':(latitude+","+longitude),
+                                                            'direction':direction,
+                                                            'metaStringOne':self.request.get('crawlLine'),
+                                                            'metaStringTwo':'routelisting update',
+                                                            'routeID':routeID,
+                                                            'stopID':stopID,
+                                                            })
+                        task.add('crawlerrors')
+                    else:
+                        route.stopLocation = stop
+                        route.put()
 
         return
     
@@ -311,45 +315,6 @@ class FixitHandler(webapp.RequestHandler):
         self.response.out.write(template.render(path,template_values))
     
 ## end
-    
-class RouteListHandler(webapp.RequestHandler):
-    def get(self,routeID=""):
-      logging.info("fetching all stop locations for route %s" % routeID)
-      q = db.GqlQuery("SELECT * FROM RouteListing WHERE route = :1", routeID)
-      if q is not None:
-          results = []
-          
-          # Perform the query to get 500 results.
-          stops = q.fetch(500)
-          logging.info("running through stop location list....")
-          for s in stops:
-              logging.debug("fetch route list details for stop %s" % s.stopID)
-              try:
-                  sLocation = s.stopLocation
-              except datastore_errors.Error,e:
-                  if e.args[0] == "ReferenceProperty failed to be resolved":
-                      sLocation = None
-                  else:
-                      raise
-                  
-              results.append({'stopID':s.stopID,
-                              'location':sLocation if sLocation is not None else 'unknown',
-                              'intersection':sLocation.intersection if sLocation is not None else 'unknown',
-                              'direction':sLocation.direction if sLocation is not None else 'unknown',
-                              'routeID':routeID,
-                              })
-              
-              
-      # add the counter to the template values
-      template_values = {'stops':results}
-        
-      # create a page that provides a form for sending an SMS message
-      path = os.path.join(os.path.dirname(__file__), 'stop.html')
-      self.response.out.write(template.render(path,template_values))
-
-    
-## end
-
 
 class ErrorTaskHandler(webapp.RequestHandler):
     def post(self):
@@ -403,7 +368,6 @@ def main():
                                         ('/crawl/storethestop', StopStorageHandler),
                                         ('/crawl/errortask', ErrorTaskHandler),
                                         ('/crawl/fixit', FixitHandler),
-                                        ('/routelist/(.*)', RouteListHandler),
                                         ],
                                        debug=True)
   wsgiref.handlers.CGIHandler().run(application)

@@ -32,12 +32,14 @@ class DestinationListing(db.Model):
 ## end DestinationListing
 
 class BusStopAggregation(db.Model):
-    dateAdded = db.DateTimeProperty(auto_now_add=True)
-    routeID   = db.StringProperty()
-    stopID    = db.StringProperty()
-    time      = db.IntegerProperty()
-    text      = db.StringProperty(multiline=True)
-    sid       = db.StringProperty()
+    dateAdded   = db.DateTimeProperty(auto_now_add=True)
+    routeID     = db.StringProperty()
+    stopID      = db.StringProperty()
+    destination = db.StringProperty()
+    arrivalTime = db.StringProperty()
+    time        = db.IntegerProperty()
+    text        = db.StringProperty(multiline=True)
+    sid         = db.StringProperty()
 ## end BusStopAggregation
 
 class LiveRouteStatus(db.Model):

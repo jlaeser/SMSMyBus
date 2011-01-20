@@ -62,24 +62,48 @@ def computeCountdownMinutes(arrivalTime):
 
     # compute current time in minutes
     ltime = time.localtime()
-    ltime_hour = ltime.tm_hour - 5
+    ltime_hour = ltime.tm_hour - 6
     ltime_hour += 24 if ltime_hour < 0 else 0
     ltime_min = ltime_hour * 60 + ltime.tm_min
-    #logging.info("local time: %s hours %s minutes", (ltime_hour,ltime_min))
+    #logging.info("local time: %s hours, or %s minutes"  % (ltime_hour,ltime_min))
     
-    # pull out the time
+    # pull out the arrival time
+    #logging.debug("API: parsing arrival time of %s" % arrivalTime)
     m = re.search('(\d+):(\d+)\s(.*?)',arrivalTime)
     btime_hour = arrival_hour = int(m.group(1))
-    btime_min = int(m.group(2))
-    #logging.info("computing countdown with %s - %s hours %s minutes", (arrivalTime,btime_hour,btime_min))
-                 
-    # determine whether we're in the morning or afternoon
-    # and adjust hours accordingly
-    if arrivalTime.find('PM') > -1:
-        btime_hour += 12 if btime_hour < 12 else 0
- 
-    delta_in_min = (btime_hour*60 + btime_min) - ltime_min
+    btime_hour += 12 if arrivalTime.find('pm') else 0
+    btime_min = btime_hour * 60 + int(m.group(2))
+    #logging.info("computing countdown with %s. %s hours %s minutes" % (arrivalTime,btime_hour,btime_min))
+                  
+    delta_in_min = btime_min - ltime_min
+    #logging.debug('API: countdown is %s minutes'% delta_in_min)
     return(delta_in_min)
 
 ## end computeCountdownMinutes()
 
+def buildErrorResponse(error,description):
+      # encapsulate response in json
+      response_dict = {'status':error,
+                       'timestamp':getLocalTimestamp(),
+                       'description':description,
+                       }
+      return response_dict
+            
+## end jsonError()    
+
+def getDirectionLabel(directionID):
+    directionLabel = memcache.get("directionID")
+    if directionLabel is None:
+        q = db.GqlQuery("SELECT * FROM DestinationListing WHERE id = :1", directionID)
+        directionQuery = q.fetch(1)
+        if len(directionQuery) > 0:
+            logging.debug("Found destination ID mapping... %s :: %s" % (directionQuery[0].id,directionQuery[0].label))
+            directionLabel = directionQuery[0].label
+            memcache.add(directionID, directionLabel)
+        else:
+            logging.error("ERROR: We don't have a record of this direction ID!?! Impossible! %s" % directionID)
+            directionLabel = "unknown"
+            
+    return directionLabel
+
+## end getDirectionLabel()

@@ -1,6 +1,6 @@
 cron:
 - description: aggregation table cleaner
-  url: /cleandb
+  url: /aggr/cleandb
   schedule: every 15 minutes
   
 - description: fetch web service data by stop

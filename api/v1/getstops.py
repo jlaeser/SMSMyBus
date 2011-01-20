@@ -4,6 +4,8 @@ import logging
 import time
 import re
 
+from django.utils import simplejson
+
 from google.appengine.api import users
 from google.appengine.api import memcache
 from google.appengine.api.urlfetch import DownloadError
@@ -179,6 +181,21 @@ def stopRouteRequest(stopID, routeID, devStoreKey):
     logging.debug("Stop/Route Request: %s" % xml)
     return xml
 
+
+    # encapsulate response in json
+    response_dict = {}
+    response_dict.update({'status':'0',
+                          'timestamp':getLocalTimestamp(),
+                          'stopID':stopID,
+                          'profilePic':profilePic,
+                          'body':self.request.get('comment'),
+                         })
+    logging.debug('json response %s' % response_dict);
+            
+    self.response.headers['Content-Type'] = 'application/javascript'
+    self.response.out.write(simplejson.dumps(response_dict))
+
+
 ## end stopRouteRequest()
 
 def routeVehicleRequest(routeID, vehicleID, devStoreKey):
@@ -202,7 +219,7 @@ def routeVehicleRequest(routeID, vehicleID, devStoreKey):
     
     logging.debug("Route/Vehicle Request: %s" % xml)
     return xml
-
+        
 ## end stopRouteRequest()
 
 
