@@ -1,7 +1,4 @@
 import logging
-
-from datetime import date
-from datetime import timedelta
 import time
 
 from google.appengine.api import urlfetch
@@ -165,7 +162,7 @@ def getDirectionLabel(directionID):
         q = db.GqlQuery("SELECT * FROM DestinationListing WHERE id = :1", directionID)
         directionQuery = q.fetch(1)
         if len(directionQuery) > 0:
-            logging.debug("Found destination ID mapping... %s :: %s" % (directionQuery[0].id,directionQuery[0].label))
+            #logging.debug("Found destination ID mapping... %s :: %s" % (directionQuery[0].id,directionQuery[0].label))
             directionLabel = directionQuery[0].label
             memcache.add(directionID, directionLabel)
         else:
