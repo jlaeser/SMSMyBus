@@ -18,7 +18,7 @@ def validateDevKey(devKey):
     if devKey is None:
         return None
    
-    storeKey = memcache.get(dev)
+    storeKey = memcache.get(devKey)
     if storeKey is None:
         q = db.GqlQuery("SELECT __key__ FROM DeveloperKeys WHERE developerKey = :1", devKey)
         storeKey = q.get()

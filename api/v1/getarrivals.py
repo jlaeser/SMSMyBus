@@ -5,7 +5,6 @@ import time
 import re
 
 from google.appengine.api import users
-from google.appengine.api import memcache
 from google.appengine.api import datastore_errors
 from google.appengine.api.urlfetch import DownloadError
 from google.appengine.api.labs import taskqueue
@@ -23,6 +22,11 @@ from api import asynch
 import data_model
 
 class MainHandler(webapp.RequestHandler):
+    # POST not support by the API
+    def post(self):
+        self.response.headers['Content-Type'] = 'application/javascript'
+        self.response.out.write(simplejson.dumps(utils.buildErrorResponse('-1','The API does not support POST requests')))
+        return
     
     def get(self):
       
@@ -51,7 +55,7 @@ class MainHandler(webapp.RequestHandler):
           response = utils.buildXMLErrorResponse('-1','Invalid Request parameters')
 
       # encapsulate response in json
-      logging.debug('API: json response %s' % response);            
+      logging.debug('API: json response %s' % response);
       self.response.headers['Content-Type'] = 'application/javascript'
       self.response.out.write(simplejson.dumps(response))
 

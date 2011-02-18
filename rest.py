@@ -125,9 +125,9 @@ def buildXMLResponse(textBody, routeID, stopID):
       ltime_hour = ltime.tm_hour - 6
       ltime_hour += 24 if ltime_hour < 0 else 0
       ltime_min = ltime_hour * 60 + ltime.tm_min
-      logging.debug("local time... %s (%s:%s) day minutes %s" % (ltime,ltime_hour,ltime.tm_min,ltime_min))
+      #logging.debug("local time... %s (%s:%s) day minutes %s" % (ltime,ltime_hour,ltime.tm_min,ltime_min))
             
-      logging.debug("textBody.... %s" % textBody)
+      #logging.debug("textBody.... %s" % textBody)
       tlist = textBody.split('\n')
       
       tstamp_min = str(ltime.tm_min) if ltime.tm_min >= 10 else ("0"+str(ltime.tm_min))
@@ -136,8 +136,6 @@ def buildXMLResponse(textBody, routeID, stopID):
       xml += '<timestamp>'+tstamp_hour+':'+tstamp_min+tstamp_label+'</timestamp>'
       
       for t in tlist:
-          logging.debug("convert %s" % t)
-          
           if t.find(':') > -1:
               # parse aggregated data
               if t.find('Route') > -1:
@@ -147,11 +145,6 @@ def buildXMLResponse(textBody, routeID, stopID):
                       logging.error("no match for the route timing data!?!")
                       xml += '</route></SMSMyBusResponse>'
                       return
-                  else:
-                      logging.debug("found groupings %s" % m.group(0))
-                      logging.debug("found routeID %s" % m.group(1))
-                      logging.debug("found hour %s" % m.group(2))
-                      logging.debug("found minutes %s" % m.group(3))
               
                   # pull out the routeID
                   routeID = m.group(1).lstrip('0')
@@ -159,7 +152,6 @@ def buildXMLResponse(textBody, routeID, stopID):
               
                   # pull out the qualifiers                  
                   direction = t.split('toward ')[1]
-                  logging.debug("found direction %s" % direction)
                   
                   # pull out the time
                   btime_hour = arrival_hour = int(m.group(2))

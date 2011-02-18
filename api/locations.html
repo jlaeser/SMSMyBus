@@ -52,7 +52,7 @@
  </tr>
  <tr class="striped">
   <td class="center">routeID</td>
-  <td class="center">String (required)</td>
+  <td class="center">String</td>
   <td>A two-digit value describing a valid route in the Metro system.</td>
  </tr>
  <tr>
@@ -71,43 +71,41 @@
  will be grouped by route, listing the details of each stop on that route.
  <p> </p>
  <p>No assumptions should be made about the order of the stops in the response.</p>
-
-<code class="prettyprint lang-xml">
-&lt;?xml version=”1.0”?&gt;
-  &lt;SMSMyBusResponse&gt;
-    &lt;status&gt;0&lt;/status&gt;
-    &lt;timestampe&gt;12:38pm&lt;/timestamp&gt;
-    &lt;route&gt;
-      &lt;routeID&gt;3&lt;/routeID&gt;
-      &lt;stop&gt;
-        &lt;stopID&gt;1391&lt;/stopID&gt;
-        &lt;intersection&gt;Atwood & Ohio&lt;/intersection&gt;
-        &lt;lat&gt;43.0937715&lt;/lat&gt;
-        &lt;lon&gt;-89.3467281&lt;/lon&gt;
-        &lt;direction&gt;ETP&lt;/direction&gt;
-      &lt;/stop&gt;
-      &lt;stop&gt;
-        &lt;stopID&gt;1961&lt;/stopID&gt;
-        &lt;intersection&gt;Atwood & Rusk&lt;/intersection&gt;
-        &lt;lat&gt;43.0924936&lt;/lat&gt;
-        &lt;lon&gt;-89.3528187&lt;/lon&gt;
-        &lt;direction&gt;ETP&lt;/direction&gt;
-      &lt;/stop&gt;
-      ...
-      ...
-    &lt;/route&gt;
-  &lt;/SMSMyBusResponse&gt;
+<code class="prettyprint lang-javascript">
+{
+    "status" : "0",
+    "timestamp" : "12:38pm",
+    "route" : {
+      "routeID" : "03",
+      "stop" : [
+        {
+          "stopID" : "1391",
+          "intersection" : "Atwood & Ohio",
+          "latitude" : "43.0937715",
+          "longitude" : "-89.3467281",
+          "destination" : "ETP",
+        },
+        {
+          "stopID" : "1961",
+          "intersection" : "Atwood & Rusk",
+          "latitude" : "43.0924936",
+          "longitude" : "-89.3528187",
+          "destination" : "ETP",
+        },
+        ...
+        ...
+      ],
+}
 </code>
  <h3>Error</h3>
  An error is indicated by a non-zero status value. If the status value is non-zero, the description field will be 
  present describing the error in plain English.
  <p> </p>
-<code class="prettyprint lang-xml">
-&lt;?xml version=”1.0”?&gt;
-  &lt;SMSMyBusResponse&gt;
-    &lt;status&gt;-1&lt;/status&gt;
-    &lt;description&gt;Invalid request parameters&lt;/description&gt;	
-  &lt;/SMSMyBusResponse&gt;
+<code class="prettyprint lang-javascript">
+{
+  "status" : "-1",
+  "description" : "Invalid request parameters",	
+}
 </code>
  </div>
 
@@ -117,6 +115,7 @@
  <div id="spec">
  <h3>Overview</h3>
  The getstops method will return the geo locations for all stops near a specified location.
+ <br/><span style="color:red;">This method has not been enabled yet.</span>
  <h3>URL</h3>
  http://www.smsmybus.com/api/v1/getnearbystops
  <h3>Fields</h3>
@@ -165,40 +164,94 @@
  will be grouped by route, listing the details of each stop on that route within the specified radius.
  <p> </p>
  <p>No assumptions should be made about the order of the stops in the response.</p>
-
-<code class="prettyprint lang-xml">
-&lt;?xml version=”1.0”?&gt;
-  &lt;SMSMyBusResponse&gt;
-    &lt;status&gt;0&lt;/status&gt;
-    &lt;timestampe&gt;12:38pm&lt;/timestamp&gt;
-    &lt;stop&gt;
-        &lt;stopID&gt;1391&lt;/stopID&gt;
-        &lt;intersection&gt;Atwood & Ohio&lt;/intersection&gt;
-        &lt;lat&gt;43.0937715&lt;/lat&gt;
-        &lt;lon&gt;-89.3467281&lt;/lon&gt;
-        &lt;direction&gt;ETP&lt;/direction&gt;
-    &lt;/stop&gt;
-    &lt;stop&gt;
-        &lt;stopID&gt;1961&lt;/stopID&gt;
-        &lt;intersection&gt;Atwood & Rusk&lt;/intersection&gt;
-        &lt;lat&gt;43.0924936&lt;/lat&gt;
-        &lt;lon&gt;-89.3528187&lt;/lon&gt;
-        &lt;direction&gt;ETP&lt;/direction&gt;
-    &lt;/stop&gt;
-    ...
-    ...
-  &lt;/SMSMyBusResponse&gt;
+<code class="prettyprint lang-javascript">
+{
+    "status" : "0",
+    "timestamp" : "12:38pm",
+    "stop" : [
+        {
+          "stopID" : "1391",
+          "intersection" : "Atwood & Ohio",
+          "latitude" : "43.0937715",
+          "longitude" : "-89.3467281",
+          "destination" : "ETP",
+        },
+        {
+          "stopID" : "1961",
+          "intersection" : "Atwood & Rusk",
+          "latitude" : "43.0924936",
+          "longitude" : "-89.3528187",
+          "destination" : "ETP",
+        },
+        ...
+        ...
+      ],
+}
 </code>
  <h3>Error</h3>
  An error is indicated by a non-zero status value. If the status value is non-zero, the description field will be 
  present describing the error in plain English.
  <p> </p>
-<code class="prettyprint lang-xml">
-&lt;?xml version=”1.0”?&gt;
-  &lt;SMSMyBusResponse&gt;
-    &lt;status&gt;-1&lt;/status&gt;
-    &lt;description&gt;Invalid request parameters&lt;/description&gt;	
-  &lt;/SMSMyBusResponse&gt;
+<code class="prettyprint lang-javascript">
+{
+  "status" : "-1",
+  "description" : "Invalid request parameters",	
+}
+</code>
+ </div>
+
+ <hr>
+
+ <h1>getstoplocation</h1>
+ <div id="spec">
+ <h3>Overview</h3>
+ The getstoplocation method will return the geo location for a specific stop.
+ <h3>URL</h3>
+ http://www.smsmybus.com/api/v1/getstoplocation
+ <h3>Fields</h3>
+ <table>
+ <tr>
+  <th style="width:120px;">Name</th>
+  <th style="width:150px;">Value</th>
+  <th>Description</th>
+ </tr>
+ <tr>
+  <td class="center">key</td>
+  <td class="center">String (required)</td>
+  <td>16-digit API access key</td>
+ </tr>
+ <tr class="striped">
+  <td class="center">stopID</td>
+  <td class="center">String (required)</td>
+  <td>A four-digit value describing a valid stop ID in the Metro system.</td>
+ </tr>
+ </table>
+ <h3>Examples</h3>
+ Retrieve the location of stop ID 1391:<p> </p>
+ <span style="font-weight:bold;margin-left:24px;">http://www.smsmybus.com/api/v1/getstoplocation?key=xxx&stopID=1391</span><p> </p>
+ <h3>Response</h3>
+ The response length is going to fixed since this method only supports retreiving a ingle resource. If the status field is 0, the response
+ will list the details of the requested stop.
+ <p> </p>
+<code class="prettyprint lang-javascript">
+{
+    "status" : "0",
+    "timestamp" : "12:38pm",
+    "stopID" : "1391",
+    "intersection" : "Atwood & Ohio",
+    "latitude" : "43.0937715",
+    "longitude" : "-89.3467281",
+}
+</code>
+ <h3>Error</h3>
+ An error is indicated by a non-zero status value. If the status value is non-zero, the description field will be 
+ present describing the error in plain English.
+ <p> </p>
+<code class="prettyprint lang-javascript">
+{
+  "status" : "-1",
+  "description" : "Invalid request parameters",	
+}
 </code>
  </div>
 
@@ -208,6 +261,7 @@
  <div id="spec">
  <h3>Overview</h3>
  The getvehicles method will return the geo locatios for all buses currently driving a specified route.
+ <br/><span style="color:red;">This method has not been enabled yet.</span>
  <h3>URL</h3>
  http://www.smsmybus.com/api/v1/getvehicles
  <h3>Fields</h3>
@@ -239,51 +293,53 @@
  </tr>
  </table>
  <h3>Examples</h3>
- Retrieve all stops for route 3 around a point on Atwood (43.0733673,-89.4014633):<p> </p>
- <span style="font-weight:bold;margin-left:24px;">http://www.smsmybus.com/api/v1/getnearbystops?key=xxx&routeID=03</span><p> </p>
+ Retrieve all vehicles for route 3:<p> </p>
+ <span style="font-weight:bold;margin-left:24px;">http://www.smsmybus.com/api/v1/getvehicles?key=xxx&routeID=03</span><p> </p>
+ Retrieve all details for vehicle 991 of route 3:<p> </p>
+ <span style="font-weight:bold;margin-left:24px;">http://www.smsmybus.com/api/v1/getvehicles?key=xxx&routeID=03&vehicleID=991</span><p> </p>
  <h3>Response</h3>
  The response length is dependent on the particular request parameters. If the status field is 0, the response
  will be grouped by route, listing the details of each stop on that route within the specified radius.
  <p> </p>
  <p>No assumptions should be made about the order of the stops in the response.</p>
-
-<code class="prettyprint lang-xml">
-&lt;?xml version=”1.0”?&gt;
-  &lt;SMSMyBusResponse&gt;
-    &lt;status&gt;0&lt;/status&gt;
-    &lt;timestampe&gt;12:38pm&lt;/timestamp&gt;
-    &lt;vehicle&gt;
-        &lt;vehicleID&gt;994&lt;/vehicleID&gt;
-        &lt;routeID&gt;03&lt;/routeID&gt;
-        &lt;next-intersection&gt;Atwood & Ohio&lt;/next-intersection&gt;
-        &lt;next-stopID&gt;1391&lt;/next-stopID&gt;
-        &lt;lat&gt;43.0937715&lt;/lat&gt;
-        &lt;lon&gt;-89.3467281&lt;/lon&gt;
-        &lt;direction&gt;ETP&lt;/direction&gt;
-    &lt;/vehicle&gt;
-    &lt;vehicle&gt;
-        &lt;vehicleID&gt;145&lt;/vehicleID&gt;
-        &lt;routeID&gt;03&lt;/routeID&gt;
-        &lt;next-intersection&gt;Atwood & Rusk&lt;/next-intersection&gt;
-        &lt;next-stopID&gt;1712&lt;/next-stopID&gt;
-        &lt;lat&gt;43.0924936&lt;/lat&gt;
-        &lt;lon&gt;-89.3528187&lt;/lon&gt;
-        &lt;direction&gt;WTP&lt;/direction&gt;
-    &lt;/vehicle&gt;
+<code class="prettyprint lang-javascript">
+{
+    "status" : "0",
+    "timestamp" : "12:38pm",
+    "vehicle" : {
+      "stopID" : "1101",
+      "route" : {
+        "routeID" : "4",
+        "vehicleID" : "993",
+        "human" : "Route 4 toward STP arrives in 10 minutes",
+        "minutes" : "10",
+        "arrivalTime" : "12:44pm",
+        "destination" : "STP",
+      },
+      "route" : {
+        "routeID" : "3"
+        "vehicleID" : "433"
+        "human" : "Route 3 toward ETP arrives in 12 minutes"
+        "minutes" : "12"
+        "arrivalTime" : "12:46pm"
+        "destination" : "ETP"
+      },
+      ...
+      ...
+    },
     ...
     ...
-  &lt;/SMSMyBusResponse&gt;
+}
 </code>
  <h3>Error</h3>
  An error is indicated by a non-zero status value. If the status value is non-zero, the description field will be 
  present describing the error in plain English.
  <p> </p>
-<code class="prettyprint lang-xml">
-&lt;?xml version=”1.0”?&gt;
-  &lt;SMSMyBusResponse&gt;
-    &lt;status&gt;-1&lt;/status&gt;
-    &lt;description&gt;Invalid request parameters&lt;/description&gt;	
-  &lt;/SMSMyBusResponse&gt;
+<code class="prettyprint lang-javascript">
+{
+  "status" : "-1",
+  "description" : "Invalid request parameters",	
+}
 </code>
  </div>
  

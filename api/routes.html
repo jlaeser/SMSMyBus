@@ -55,35 +55,35 @@
  
  <span style="font-weight:bold;margin-left:24px;">http://www.smsmybus.com/api/v1/getroutes?key=xxx</span><p> </p>
  <h3>Response</h3>
-<code class="prettyprint lang-xml">
-&lt;?xml version=”1.0”?&gt;
-  &lt;SMSMyBusResponse&gt;
-    &lt;status&gt;0&lt;/status&gt;
-    &lt;timestampe&gt;12:38pm&lt;/timestamp&gt;
-    &lt;route&gt;
-      &lt;routeID&gt;2&lt;/routeID&gt;
-      &lt;endpoint-one&gt;STP&lt;/endpoint-one&gt;
-      &lt;endpoint-two&gt;NTP&lt;/endpoint-two&gt;      
-    &lt;route&gt;
-    &lt;route&gt;
-      &lt;routeID&gt;3&lt;/routeID&gt;
-      &lt;endpoint-one&gt;WTP&lt;/endpoint-one&gt;
-      &lt;endpoint-two&gt;ETP&lt;/endpoint-two&gt;      
-    &lt;route&gt;
-    ...
-    ...
-  &lt;/SMSMyBusResponse&gt;
+<code class="prettyprint lang-javascript">
+{
+    "status" : "0",
+    "timestamp" : "12:38pm",
+    "route" : [
+      {
+        "routeID" : "02",
+        "endpoint-one" : "STP",
+        "endpoint-two" : "NTP",
+      },
+      {
+        "routeID" : "03",
+        "endpoint-one" : "WTP",
+        "endpoint-two" : "ETP",
+      },
+      ...
+      ...
+    ],
+}
 </code>
  <h3>Error</h3>
  An error is indicated by a non-zero status value. If the status value is non-zero, the description field will be 
  present describing the error in plain English.
  <p> </p>
-<code class="prettyprint">
-&lt;?xml version=”1.0”?&gt;
-  &lt;SMSMyBusResponse&gt;
-    &lt;status&gt;-1&lt;/status&gt;
-    &lt;description&gt;Invalid request parameters&lt;/description&gt;	
-  &lt;/SMSMyBusResponse&gt;
+<code class="prettyprint lang-javascript">
+{
+  "status" : "-1",
+  "description" : "Invalid request parameters",	
+}
 </code>
  </div>
   

@@ -26,3 +26,7 @@ cron:
 - description: reset quotas for the abusers
   url: /resetquotas
   schedule: every day 14:00
+
+- description: cache locations of request history
+  url: /labs/spawncollector
+  schedule: every day 14:00

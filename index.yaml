@@ -1,5 +1,11 @@
 indexes:
 
+- kind: PhoneLog
+  properties:
+  - name: date
+    direction: desc
+  - name: phone
+  
 - kind: RouteListing
   properties:
   - name: key

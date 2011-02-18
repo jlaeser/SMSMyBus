@@ -136,8 +136,8 @@ class AggregationHandler(webapp.RequestHandler):
         directionID = self.request.get('direction')
         scheduleURL = self.request.get('url')
         caller = self.request.get('caller')
-        logging.debug("aggregation fetch for %s stop %s route %s direction %s from caller %s" % 
-                      (sid, stopID, routeID, directionID, caller))
+        #logging.debug("aggregation fetch for %s stop %s route %s direction %s from caller %s" % 
+        #              (sid, stopID, routeID, directionID, caller))
         
         directionLabel = bus.getDirectionLabel(directionID)
         loop = 0
@@ -166,7 +166,7 @@ class AggregationHandler(webapp.RequestHandler):
         else:
            soup = BeautifulSoup(result.content)
            for slot in soup.html.body.findAll("a","ada"):
-              logging.debug("pulling out a timeslot from page... %s" % slot)
+              #logging.debug("pulling out a timeslot from page... %s" % slot)
               # only take the first time entry
               if slot['title'].split(':')[0].isdigit():
                 arrival = slot['title']
@@ -180,13 +180,13 @@ class AggregationHandler(webapp.RequestHandler):
                 stop.sid = sid
           
                 # turn the arrival time into absolute minutes
-                logging.debug("chop up arrival time... %s" % arrival)
+                #logging.debug("chop up arrival time... %s" % arrival)
                 hours = int(arrival.split(':')[0])
                 if arrival.find('P.M.') > 0 and int(hours) < 12:
                     hours += 12
                 minutes = int(arrival.split(':')[1].split()[0])
                 arrivalMinutes = (hours * 60) + minutes
-                logging.debug("chop up produced %s hours and %s minutes" % (hours,minutes))
+                #logging.debug("chop up produced %s hours and %s minutes" % (hours,minutes))
                 stop.time = arrivalMinutes
           
                 stop.text = textBody + " toward %s" % directionLabel
@@ -195,12 +195,12 @@ class AggregationHandler(webapp.RequestHandler):
         # create the task that glues all the messages together when 
         # we've finished the fetch tasks
         counter = memcache.decr(sid)
-        logging.debug("bus route processed... new counter is %s" % counter)
+        #logging.debug("bus route processed... new counter is %s" % counter)
         if counter == 0:
             task = Task(url='/aggr/aggregationResultTask', 
                         params={'sid':sid,'caller':caller})
             task.add('aggregationSMS')
-            logging.debug("Added new task to send out the aggregation data for ID %s, from caller %s" % (sid,caller))
+            #logging.debug("Added new task to send out the aggregation data for ID %s, from caller %s" % (sid,caller))
             memcache.delete(sid)
           
         return;

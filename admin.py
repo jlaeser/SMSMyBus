@@ -2,6 +2,8 @@ import os
 import wsgiref.handlers
 import logging
 from operator import itemgetter
+from datetime import date
+from datetime import timedelta
 
 from google.appengine.api import users
 from google.appengine.api.urlfetch import DownloadError
@@ -36,10 +38,6 @@ class AdminHandler(webapp.RequestHandler):
           # If the app stored a cursor during a previous request, use it.
           if cursor:
               q.with_cursor(cursor)
-
-          # Perform the query to get 500 results.
-          #log_events = q.fetch(500)
-          #cursor = q.cursor()
 
           logQuery = q.fetch(500)
           cursor = q.cursor()
@@ -80,7 +78,9 @@ class AdminHandler(webapp.RequestHandler):
       
       # review the results for popular stops
       stops_stats = []
-      for key,value in reqs.items():
+      sorted_reqs = reqs.items()
+      sorted_reqs.sort(key=itemgetter(1),reverse=True)
+      for key,value in sorted_reqs:
           stops_stats.append({'stopID':key,
                               'count':value,
                               })
@@ -144,11 +144,40 @@ class SendSMSHandler(webapp.RequestHandler):
             return('Not so fast!')
             
 ## end SendSMSHandler()
-            
+
+class Histogram(webapp.RequestHandler):
+    def get(self):
+      histogram = dict()
+      output = ''
+      
+      startDate = date.today() - timedelta(days=7)
+      endDate = date.today()
+      for i in range(1,51):
+          week = 'week'+str(i)
+          s = startDate.isoformat()
+          e = endDate.isoformat()
+          logging.debug('checking between '+s+' and '+e)
+          q = db.GqlQuery("SELECT * FROM PhoneLog WHERE date > DATE(:1) and date <= DATE(:2)", s,e)
+          #q = db.GqlQuery("SELECT * FROM PhoneLog WHERE date >= DATE(:1)", s)
+          result = q.fetch(500)
+          weeklyCount = len(result)
+          histogram[week] = weeklyCount
+          output += '<p>'+str(i)+':'+str(weeklyCount)+'</p>'
+          logging.debug('week '+str(i)+' had '+str(weeklyCount)+' requests')
+          
+          # bump the dates backwards
+          #runningTotal = len(result)
+          endDate = startDate
+          startDate = endDate - timedelta(days=7)
+          
+      self.response.out.write(output)
+## end 
+
 def main():
   logging.getLogger().setLevel(logging.DEBUG)
   application = webapp.WSGIApplication([('/admin.html', AdminHandler),
                                         ('/admin/sendsms', SendSMSHandler),
+                                        ('/admin/histogram', Histogram),
                                         ],
                                        debug=True)
   wsgiref.handlers.CGIHandler().run(application)
