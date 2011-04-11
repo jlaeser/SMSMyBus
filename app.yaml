@@ -1,5 +1,5 @@
 application: smsmybus
-version: 19
+version: 20
 runtime: python
 api_version: 1
 
@@ -109,8 +109,12 @@ handlers:
 - url: /api/v1/getarrivals
   script: api/v1/getarrivals.py
 
-- url: /api/v1/get(stops|nearbystops|stoplocation)
+- url: /api/v1/get(stops|nearbystops|stoplocation|debug)
   script: api/v1/getstops.py
+
+- url: /api/location
+  script: api/feed.py
+  login: admin
 
 - url: /api/
   static_files: api/index.html
@@ -119,6 +123,10 @@ handlers:
 - url: /api/(.*\.(html|css|js))
   static_files: api/\1
   upload: api/(.*\.(html|css|js))
+  
+- url: /api/v1/createdevkey/.*
+  script: api/v1/getarrivals.py
+  login: admin
   
 # drop table
 - url: /droptable/.*
