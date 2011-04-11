@@ -148,7 +148,7 @@ def aggregateBuses(stopID, sid, caller):
                                 'caller':caller
                                 })
             task.add('aggregation')
-            logging.debug("Added new task for bus aggregation %s route %s counter: %s" % (sid, r.route, counter))
+            #logging.debug("Added new task for bus aggregation %s route %s counter: %s" % (sid, r.route, counter))
 
     
     return
