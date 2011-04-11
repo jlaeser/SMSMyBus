@@ -23,6 +23,14 @@ cron:
   url: /rest/prefetch/1382/
   schedule: every 1 minutes
   
+- description: west bound at sector67
+  url: /rest/prefetch/1575/
+  schedule: every 1 minutes
+  
+- description: west bound at sector67
+  url: /rest/prefetch/1264/
+  schedule: every 1 minutes
+  
 - description: reset quotas for the abusers
   url: /resetquotas
   schedule: every day 14:00
