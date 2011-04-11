@@ -115,7 +115,6 @@
  <div id="spec">
  <h3>Overview</h3>
  The getstops method will return the geo locations for all stops near a specified location.
- <br/><span style="color:red;">This method has not been enabled yet.</span>
  <h3>URL</h3>
  http://www.smsmybus.com/api/v1/getnearbystops
  <h3>Fields</h3>
@@ -143,11 +142,11 @@
  <tr class="striped">
   <td class="center">radius</td>
   <td class="center">Integer</td>
-  <td>The radius around the lat and lon parameters where you would like to search. The radius is in feet and must be less than 5000. It defaults to 1500.</td>
+  <td>The radius around the lat and lon parameters where you would like to search. The radius is in feet and must be less than 5000. It defaults to 500.</td>
  </tr>
  <tr>
   <td class="center">routeID</td>
-  <td class="center">String</td>
+  <td class="center">String (required)</td>
   <td>A two-digit value describing a valid route in the Metro system. If a routeID is provided, the results will be limited to stops that service that route.</td>
  </tr>
  <tr class="striped">

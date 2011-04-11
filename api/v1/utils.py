@@ -6,7 +6,8 @@ import re
 from google.appengine.api import users
 from google.appengine.api import memcache
 from google.appengine.ext import db
-        
+
+from data_model import DeveloperRequest
 
 def validateDevKey(devKey):
     
@@ -25,7 +26,7 @@ def validateDevKey(devKey):
         if storeKey is None:
             return None
         else:
-            memcache.put(devKey, storeKey)
+            memcache.set(devKey, storeKey)
     
     return storeKey
     
@@ -99,7 +100,7 @@ def getDirectionLabel(directionID):
         if len(directionQuery) > 0:
             logging.debug("Found destination ID mapping... %s :: %s" % (directionQuery[0].id,directionQuery[0].label))
             directionLabel = directionQuery[0].label
-            memcache.add(directionID, directionLabel)
+            memcache.set(directionID, directionLabel)
         else:
             logging.error("ERROR: We don't have a record of this direction ID!?! Impossible! %s" % directionID)
             directionLabel = "unknown"
@@ -107,3 +108,18 @@ def getDirectionLabel(directionID):
     return directionLabel
 
 ## end getDirectionLabel()
+
+GETARRIVALS = "get arrivals"
+GETVEHICLE = "get vehicle"
+GETSTOPS = "get stops"
+GETNEARBYSTOPS = "get nearby stops"
+
+def recordDeveloperRequest(devKey,type,terms,ipaddr,error='success'):
+    req = DeveloperRequest()
+    req.developer = devKey
+    req.type = type
+    req.error = error
+    req.requestTerms = terms
+    req.remoteAddr = ipaddr
+    req.put()
+## end recordDeveloperRequest()
