@@ -73,6 +73,15 @@ class DeveloperKeys(db.Model):
     errorCounter   = db.IntegerProperty()
 ## end DeveloperKeys
 
+class DeveloperRequest(db.Model):
+    developer     = db.ReferenceProperty()
+    date          = db.DateTimeProperty(auto_now_add=True)
+    type          = db.StringProperty()
+    error         = db.StringProperty()
+    requestTerms  = db.StringProperty()
+    remoteAddr    = db.StringProperty()
+## end DeveloperRequest
+
 class ParseErrors(db.Model):
     dateAdded = db.DateTimeProperty(auto_now_add=True)
     intersection = db.StringProperty()
