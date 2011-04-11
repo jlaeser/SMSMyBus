@@ -19,7 +19,7 @@ from django.utils import simplejson
 from api.v1 import utils
 from api import asynch
 
-import data_model
+from data_model import *
 
 class MainHandler(webapp.RequestHandler):
     # POST not support by the API
@@ -33,6 +33,7 @@ class MainHandler(webapp.RequestHandler):
       # validate the request parameters
       devStoreKey = validateRequest(self.request)
       if devStoreKey is None:
+          logging.error("failed to validate the request paramters")
           self.response.headers['Content-Type'] = 'application/javascript'
           self.response.out.write(simplejson.dumps(utils.buildErrorResponse('-1','Illegal developer key received')))
           return
@@ -46,17 +47,21 @@ class MainHandler(webapp.RequestHandler):
       # stopID requests...
       if stopID is not '' and routeID is '':
           response = stopRequest(stopID, devStoreKey)
+          utils.recordDeveloperRequest(devStoreKey,utils.GETARRIVALS,self.request.query_string,self.request.remote_addr);
       elif stopID is not '' and routeID is not '':
           response = stopRouteRequest(stopID, routeID, devStoreKey)
+          utils.recordDeveloperRequest(devStoreKey,utils.GETARRIVALS,self.request.query_string,self.request.remote_addr);
       elif routeID is not '' and vehicleID is not '':
           response = routeVehicleRequest(routeID, vehicleID, devStoreKey)
+          utils.recordDeveloperRequest(devStoreKey,utils.GETVEHICLE,self.request.query_string,self.request.remote_addr);
       else:
           logging.debug("API: invalid request")
-          response = utils.buildXMLErrorResponse('-1','Invalid Request parameters')
+          utils.recordDeveloperRequest(devStoreKey,utils.GETARRIVALS,self.request.query_string,self.request.remote_addr,'illegal query string combination');
+          response = utils.buildErrorResponse('-1','Invalid Request parameters')
 
       # encapsulate response in json
       logging.debug('API: json response %s' % response);
-      self.response.headers['Content-Type'] = 'application/javascript'
+      self.response.headers['Content-Type'] = 'application/json'
       self.response.out.write(simplejson.dumps(response))
 
 ## end RequestHandler
@@ -66,6 +71,7 @@ def validateRequest(request):
     # validate the key
     devStoreKey = utils.validateDevKey(request.get('key'))
     if devStoreKey is None:
+        utils.recordDeveloperRequest(None,utils.GETARRIVALS,request.query_string,request.remote_addr,'illegal developer key specified');
         return None
     stopID = request.get('stopID')
     routeID = request.get('routeID')
@@ -73,16 +79,19 @@ def validateRequest(request):
     
     # a stopID or routeID is required
     if stopID is None and routeID is None:
+        utils.recordDeveloperRequest(devStoreKey,utils.GETARRIVALS,request.query_string,request.remote_addr,'either a stopID or a routeID must be included');
         return None
     
     # the routeID requires either a vehicleID or stopID
     if routeID is not None:
         if vehicleID is None and stopID is None:
+            utils.recordDeveloperRequest(devStoreKey,utils.GETARRIVALS,request.query_string,request.remote_addr,'if routeID is specified, either a vehicleID or stopID is required');
             return None
     
     # the vehicleID requires a routeID
     if vehicleID is not None:
         if routeID is None:
+            utils.recordDeveloperRequest(devStoreKey,utils.GETVEHICLE,request.query_string,request.remote_addr,'if a vehicleID is specified, you must include a routeID');
             return False
         
     logging.debug("successfully validated command parameters")
@@ -182,11 +191,15 @@ def routeVehicleRequest(routeID, vehicleID, devStoreKey):
 
 
 class DevKeyHandler(webapp.RequestHandler):
-    def get(self):
+    def get(self,key=""):
+        if key == "":
+          logging.error("Illegal access to dev key handler - missing key");
+          return
+
         dev = DeveloperKeys()
         dev.developerName = "Testing"
-        dev.developerKey = "nomar"
-        dev.developerEmail = "non"
+        dev.developerKey = key
+        dev.developerEmail = "gtracy@gmail.com"
         dev.requestCounter = 0
         dev.errorCounter = 0
         dev.put()
@@ -197,7 +210,7 @@ class DevKeyHandler(webapp.RequestHandler):
 def main():
   logging.getLogger().setLevel(logging.DEBUG)
   application = webapp.WSGIApplication([('/api/v1/getarrivals', MainHandler),
-                                        ('/api/v1/createdevkey', DevKeyHandler),
+                                        ('/api/v1/createdevkey/(.*)', DevKeyHandler),
                                         ],
                                        debug=True)
   wsgiref.handlers.CGIHandler().run(application)
