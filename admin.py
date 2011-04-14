@@ -76,15 +76,6 @@ class AdminHandler(webapp.RequestHandler):
                              })
       uniques = len(sorted_callers)
       
-      # review the results for popular stops
-      stops_stats = []
-      sorted_reqs = reqs.items()
-      sorted_reqs.sort(key=itemgetter(1),reverse=True)
-      for key,value in sorted_reqs:
-          stops_stats.append({'stopID':key,
-                              'count':value,
-                              })
-      
       # display some recent call history
       results = []
       q = db.GqlQuery("SELECT * FROM PhoneLog ORDER BY date DESC")
@@ -108,7 +99,6 @@ class AdminHandler(webapp.RequestHandler):
                          'uniques':uniques,
                          'callers':caller_stats,
                          'events':results,
-                         'stopList':stops_stats,
                          }
         
       # create a page that provides a form for sending an SMS message
