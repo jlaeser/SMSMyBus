@@ -244,7 +244,7 @@
     <script type="text/javascript" src="/js/jquery.timers-1.2.js"></script>
 
     <script type="text/javascript">
-      function refreshTimes(stopID, Direction) {
+      function refreshTimes(stopID, Direction, street) {
     	  var customurl = "/rest/"+stopID+"/";
            $.ajax({
             type: "GET",
@@ -252,13 +252,24 @@
             data: "",
             success: function(xml) {
       	      if($("status",xml).text() == "-1") {
-          	   $("#"+stopID+"-estimates").replaceWith('<p id="'+stopID+'-estimates" style="color:red;font-weight: bold">Error retrieving stop arrival data!</p>');
+          	   $("#"+stopID+"-estimates").replaceWith('<p id="'+stopID+'-estimates" style="font-weight: bold">Error retrieving data :(</p>');
       	      }
       	      else {
           	   //routeID = $("route",xml).text();  //oldAPI
           	   stopDispID = $("stop",xml).text();
-      	      timestamp = $("timestamp",xml).text();
-          	   $("#"+stopID+"-estimates").replaceWith('<div id="'+stopID+'-estimates" class="estimates"><span class="direction">'+Direction+'</span><div class="subhead"> &nbsp; &nbsp; Next bus at East Wash and 2nd Street per Metro '+timestamp+' estimate</div>');
+      	       timestamp = $("timestamp",xml).text();
+               switch( stopID ) {
+                   case '1575':
+                       stopDescription = 'Winnebago and Linden';
+                       break;
+                   case '1264':
+                       stopDescription = 'Winnebago and Sutherland';
+                       break;
+                   default:
+                       stopDescription = 'East Wash and 2nd Street';
+                       break;
+               }
+          	   $("#"+stopID+"-estimates").replaceWith('<div id="'+stopID+'-estimates" class="estimates"><span class="direction">'+Direction+'</span><span style="font-size:32px">'+street+'</span><div class="subhead"> &nbsp; &nbsp; Next bus at '+stopDescription+' '+timestamp+' estimate</div>');
           	   i=0; //row index, will be counting numbers      	   
       	       $("route",xml).each(function(id) {
           	       var routeID = $(this).find('routeID').text();
@@ -283,8 +294,10 @@
           //Note: this is now stupid, make the document.ready call a named function
           //alert("refresh");
           updateClock();
-          refreshTimes('1107', 'Eastbound >>');
-          refreshTimes('1382', '<< Westbound');
+          refreshTimes('1107', '<< Eastbound',' via Washington');
+          refreshTimes('1382', 'Westbound',' via Washington >>');
+          refreshTimes('1575', '<< Eastbound',' via Winnebago');
+          refreshTimes('1264', 'Westbound',' via Winnebago >>');
 	   });
     </script>
 
@@ -292,8 +305,10 @@
     <script type="text/javascript">
       $(document).ready(function() {
           updateClock();
-          refreshTimes('1107', 'Eastbound >>');
-          refreshTimes('1382', '<< Westbound');
+          refreshTimes('1107', '<< Eastbound',' via Washington');
+          refreshTimes('1382', 'Westbound',' via Washington >>');
+          refreshTimes('1575', '<< Eastbound',' via Winnebago');
+          refreshTimes('1264', 'Westbound',' via Winnebago >>');
       });
     </script>
     
@@ -342,10 +357,16 @@
 <div class="colmask doublepage">
 	<div class="colleft">
 		<div class="col1">
-            <div class="estimates" id="1382-estimates">stuff</div>
+            <div class="estimates" id="1107-estimates">working...</div>
 	    </div>
 	    <div class="col2">
-            <div class="estimates" id="1107-estimates">stuff</div>
+            <div class="estimates" id="1382-estimates">working...</div>
+	    </div>
+		<div class="col1" style="clear:both;">
+            <div class="estimates" id="1575-estimates">working...</div>
+	    </div>
+	    <div class="col2">
+            <div class="estimates" id="1264-estimates">working...</div>
 	    </div>
 	</div>
 </div>
