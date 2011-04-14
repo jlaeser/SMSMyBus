@@ -80,6 +80,10 @@ class GetNearbyStopsHandler(webapp.RequestHandler):
       lat = float(self.request.get('lat'))
       lon = float(self.request.get('lon'))
       radius = self.request.get('radius')
+      if radius == '':
+          radius = 500
+      else:
+          radius = int(radius)
       routeID = self.request.get('routeID')
       destination = self.request.get('destination')
       
@@ -133,19 +137,23 @@ class NotSupportedHandler(webapp.RequestHandler):
 
 def nearbyStops(lat,lon,radius,routeID):
 
+    # limit the radius value to 500
+    if radius > 500:
+        radius = 500
+
     if routeID is None or routeID == "":
         logging.debug('nearbyStops (%s,%s,%s,%s)' % (lat,lon,radius,routeID))
         results = StopLocation.proximity_fetch(
              StopLocation.all(),
              geotypes.Point(lat,lon),  # Or db.GeoPt
-             max_results=5,
-             max_distance=500)
+             max_results=100,
+             max_distance=radius)
     else:
         results = StopLocation.proximity_fetch(
              StopLocation.all().filter('routeID =', routeID),  # Rich query!
              geotypes.Point(lat,lon),  # Or db.GeoPt
-             max_results=5,
-             max_distance=500)
+             max_results=100,
+             max_distance=radius)    
 
     if results is None:
         response_dict = {'status':'0',
@@ -156,13 +164,19 @@ def nearbyStops(lat,lon,radius,routeID):
     
     response_dict = {'status':'0',}
     stop_results = []
+    stop_tracking = []
     for stop in results:
-        stop_results.append(dict({
-                            'stopID':stop.stopID,
-                            'intersection':stop.intersection,
-                            'latitude':stop.location.lat,
-                            'longitude':stop.location.lon,
-                            }))
+        # kind of a hack, but limit the results to one per route.
+        # the query will return multiple results for each stop
+        if stop.stopID not in stop_tracking:
+            stop_results.append(dict({
+                                'stopID':stop.stopID,
+                                'intersection':stop.intersection,
+                                'latitude':stop.location.lat,
+                                'longitude':stop.location.lon,
+                                }))
+            logging.debug('appending %s to route tracking list' % stop.stopID)
+            stop_tracking.append(stop.stopID)
 
     response_dict.update({'stop':stop_results})
         
