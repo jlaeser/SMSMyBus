@@ -137,7 +137,7 @@ class CollectorHandler(webapp.RequestHandler):
       stopLocs = memcache.get_multi(validStops)
       if self.request.get('clean') or stopLocs is None:
         memcache.delete_multi(validStops)
-        logging.error("logging stop locations!")
+        logging.debug("logging stop locations!")
         locations = dict()
         cursor = None
         # Start a query for all stop locations
