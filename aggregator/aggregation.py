@@ -39,13 +39,12 @@ class CleanAggregatorHandler(webapp.RequestHandler):
     def get(self):
       dateCheck = date.today() - timedelta(days=2)
       dateCheck = dateCheck.isoformat()
-      logging.info("Running the cleaner for the aggregation table... %s" % dateCheck)
+      #logging.info("Running the cleaner for the aggregation table... %s" % dateCheck)
       q = db.GqlQuery("SELECT * FROM BusStopAggregation WHERE dateAdded < DATE(:1)", dateCheck)
       cleanerQuery = q.fetch(100)
       msg = 'empty message'
       while len(cleanerQuery) > 0:
-          msg = "getting ready to delete %s records!" % len(cleanerQuery)
-          logging.debug(msg)
+          #logging.debug("getting ready to delete %s records!" % len(cleanerQuery))
           db.delete(cleanerQuery)
           cleanerQuery = q.fetch(100)
 
@@ -69,7 +68,7 @@ class AggregationResultHandler(webapp.RequestHandler):
       phone = self.request.get('caller')
       stopID = '-1'
       textBody = ''
-      logging.debug("Time to report back to %s on results for %s..." % (phone,sid))
+      #logging.debug("Time to report back to %s on results for %s..." % (phone,sid))
       
       # if this request is via email or is the prefetcher, grab multiple results
       num_records = 4
