@@ -98,6 +98,7 @@ def validateRequest(request):
     return devStoreKey
 
 ## end validateRequest()
+
 def stopRequest(stopID, devStoreKey):
 
     logging.debug("Stop Request started")

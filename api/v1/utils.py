@@ -11,11 +11,6 @@ from data_model import DeveloperRequest
 
 def validateDevKey(devKey):
     
-    # special dev key
-    if devKey == 'nomar': 
-        logging.info("found the magic dev key...")
-        return 1
-    
     if devKey is None:
         return None
    
@@ -63,7 +58,7 @@ def computeCountdownMinutes(arrivalTime):
 
     # compute current time in minutes
     ltime = time.localtime()
-    ltime_hour = ltime.tm_hour - 6
+    ltime_hour = ltime.tm_hour - 5
     ltime_hour += 24 if ltime_hour < 0 else 0
     ltime_min = ltime_hour * 60 + ltime.tm_min
     #logging.info("local time: %s hours, or %s minutes"  % (ltime_hour,ltime_min))
