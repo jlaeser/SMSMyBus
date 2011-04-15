@@ -1,7 +1,7 @@
 import os
 import wsgiref.handlers
 import logging
-from datetime import date
+from datetime import date, time
 from datetime import timedelta
 
 from google.appengine.api import mail
