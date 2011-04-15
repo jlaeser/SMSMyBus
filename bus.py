@@ -64,6 +64,9 @@ def findBusAtStop(routeID, stopID):
           logging.debug("Requesting schedule... %s " % s)
 
           directionLabel = getDirectionLabel(directionID)
+          if directionLabel == 'unknown':
+              logging.error('missing direction label for route %s at stop %s' % (routeID,stopID))
+
           loop = 0
           done = False
           result = None
