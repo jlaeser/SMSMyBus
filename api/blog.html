@@ -13,7 +13,7 @@
     <script type="text/javascript" src="prettify.js"></script>
   </head>
 
-<body onload="prettyPrint()">  
+<body>  
 
 <div id="page-container">
  <div id="banner"><a href=/>home</a></div>
@@ -27,67 +27,41 @@
  <ul>
   <li><a href=/api/>API Home</a></li>
   <li><a href=/api/schedule.html>Schedules</a></li>
-  <li class="selected"><a href=/api/routes.html>Routes</a></li>
+  <li><a href=/api/routes.html>Routes</a></li>
   <li><a href=/api/locations.html>Locations</a></li>
   <li><a href=/api/notifications.html>Notifications</a></li>
-  <li><a class="blog-title" href=/api/blog.html>Blog</a></li>
+  <li class="selected"><a class="blog-title" href=/api/blog.html>Blog</a></li>
  </ul>
  </div>
- <h1>getroutes</h1>
- <div id="spec">
- <h3>Overview</h3>
- The getroutes method will return all routes in the Metro system. This data will rarely change.
- <h3>URL</h3>
- http://www.smsmybus.com/api/v1/getroutes
- <h3>Fields</h3>
- <table>
- <tr>
-  <th style="width:120px;">Name</th>
-  <th style="width:150px;">Value</th>
-  <th>Description</th>
- </tr>
- <tr>
-  <td class="center">key</td>
-  <td class="center">String (required)</td>
-  <td>16-digit API access key</td>
- </tr>
- </table>
- <h3>Examples</h3>
- 
- <span style="font-weight:bold;margin-left:24px;">http://www.smsmybus.com/api/v1/getroutes?key=xxx</span><p> </p>
- <h3>Response</h3>
-<code class="prettyprint lang-javascript">
-{
-    "status" : "0",
-    "timestamp" : "12:38pm",
-    "route" : [
-      {
-        "routeID" : "02",
-        "endpoint-one" : "STP",
-        "endpoint-two" : "NTP",
-      },
-      {
-        "routeID" : "03",
-        "endpoint-one" : "WTP",
-        "endpoint-two" : "ETP",
-      },
-      ...
-      ...
-    ],
-}
-</code>
- <h3>Error</h3>
- An error is indicated by a non-zero status value. If the status value is non-zero, the description field will be 
- present describing the error in plain English.
- <p> </p>
-<code class="prettyprint lang-javascript">
-{
-  "status" : "-1",
-  "description" : "Invalid request parameters",	
-}
-</code>
+ <h1 style="float:left;">Google Gadgets!</h1><span style="float:right;">April 17, 2011</span>
+ <div id="spec" style="clear:both;line-height:150%;font-size:16px">
+ <span style="margin-left:25px;float:right;"><img src="http://cs.wisc.edu/~gtracy/img/gadget-example.png" alt="Gadget example"/></span>
+ One of the very first uses of the API was to create a Google Gadget that displays the arrival times right inside
+ your Gmail window. But it never really worked quite right so it wasn't published. But now it's been cleaned up!
+ <p>
+ So with the help of a little XML, JavaScript and of course the API, you can now get bus arrival estimates for 
+ your favorite Metro stops alongside your chat sessions and gmail folders! This post provides some instructions
+ for adding the gadget.
+ <p>
+ <strong>1.</strong> Open up your gmail settings.
+ <p>
+ <strong>2.</strong> Select the 'Gadgets' tab.
+ <p>
+ <strong>3.</strong> Add the XML path of the gadget to the text field using the desired stop ID number in the URL path. For example, 
+ for the eastbound stop outside of Trader Joe's, I would add, http://www.smsmybus.com/gadgets/metro/2749.xml
+ <p>
+ <br/>
+ <img src="http://cs.wisc.edu/~gtracy/img/gadget-instructions.png" alt="Gadget instructions image"/>
+ <p>
+ <br/>
+ <p>
+ To specify a different stop, just replace '2749' with your own four digit stop ID. And don't worry, you can always
+ check other stops from inside the gadget once it loads.
+ <p>
+ That's it! Interested in changing this? I've posted the xml on github if you'd like to use it as a starting point - 
+ <a href="https://github.com/gtracy/smsmybus-dev">https://github.com/gtracy/smsmybus-dev</a>.
  </div>
-  
+ 
  <div id="spacer"></div>
  <hr>
  <div id="footer">

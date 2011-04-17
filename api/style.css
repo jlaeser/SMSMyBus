@@ -74,7 +74,9 @@ hr {
 .selected {
 	background: white;
 }
-
+#menu .blog-title {
+    color: #b00000;
+}
 #donate {
   float: right;
   width: 25%;
@@ -129,13 +131,14 @@ hr {
 }
 
 #contact-container {
-  float: middle;
+  float: left;
   padding: 4px;
   font-size: 12px;
 }
 
 #me {
   float: right;
+  text-align: right;
   padding: 4px;
   font-size: 12px;
 }
