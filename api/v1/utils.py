@@ -61,15 +61,15 @@ def computeCountdownMinutes(arrivalTime):
     ltime_hour = ltime.tm_hour - 5
     ltime_hour += 24 if ltime_hour < 0 else 0
     ltime_min = ltime_hour * 60 + ltime.tm_min
-    #logging.info("local time: %s hours, or %s minutes"  % (ltime_hour,ltime_min))
+    logging.debug("local time: %s hours, or %s minutes"  % (ltime_hour,ltime_min))
     
     # pull out the arrival time
     #logging.debug("API: parsing arrival time of %s" % arrivalTime)
     m = re.search('(\d+):(\d+)\s(.*?)',arrivalTime)
     btime_hour = arrival_hour = int(m.group(1))
-    btime_hour += 12 if arrivalTime.find('pm') else 0
+    btime_hour += 12 if arrivalTime.find('pm') > 0 and arrival_hour < 12 else 0
     btime_min = btime_hour * 60 + int(m.group(2))
-    #logging.info("computing countdown with %s. %s hours %s minutes" % (arrivalTime,btime_hour,btime_min))
+    logging.debug("computing countdown with %s. %s hours %s minutes" % (arrivalTime,btime_hour,btime_min))
                   
     delta_in_min = btime_min - ltime_min
     #logging.debug('API: countdown is %s minutes'% delta_in_min)
