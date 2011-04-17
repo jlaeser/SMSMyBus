@@ -25,7 +25,7 @@
     <script type="text/javascript" src="http://www.smsmybus.com/js/jquery.timers-1.2.js"></script>
 
     <script type="text/javascript">
-      var metro_stopID = '1878';
+      var metro_stopID = {{ stopID }};
       var metro_stopAddress = 'unknown';
 
       $(document).ready(function() {
@@ -78,6 +78,7 @@
               }
               $("#metro_address").replaceWith('<div id="metro_address" class="subhead">' + metro_stopAddress + '</div>');
           }
+          gadgets.window.adjustHeight();
       }
 
       function estimatesResponse(obj) {
@@ -107,6 +108,7 @@
       	          $("#arrivals").append(time);        	          
               }
           }   
+          gadgets.window.adjustHeight();
        } // success function
 	
 	</script>
