@@ -121,10 +121,11 @@ def stopRequest(stopID, devStoreKey):
     #route_results = sorted(route_results, key=attrgetter('time'))
     route_results = []
     for r in routes:
-        if not utils.inthepast(r.arrivalTime):
+        minutes = utils.computeCountdownMinutes(r.arrivalTime)
+        if minutes > 0:
             route_results.append(dict({'routeID':r.routeID,
                           'vehicleID':'unknown',
-                          'minutes':str(utils.computeCountdownMinutes(r.arrivalTime)),
+                          'minutes':str(minutes),
                           'arrivalTime':r.arrivalTime,
                           'destination':r.destination,
                           }))            
