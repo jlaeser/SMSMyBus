@@ -142,7 +142,7 @@ def handle_result(rpc,stopID,routeID,sid,directionID):
     if counter == 0:
         # put them all together
         memcache.delete(sid)
-        routes = aggregateAsynchResults(sid)
+        #routes = aggregateAsynchResults(sid)
         
     return routes
 
