@@ -1,8 +1,8 @@
-	body {
+body {
 		margin:0;
 		padding:0;
 		border:0;			/* This removes the border around the viewport in old versions of IE */
-		width:100%;
+		width:90%;
 		font-size: 12px;
 		font-family: Arial;
 		color: black;
@@ -35,13 +35,13 @@
 		width:100%;
 		text-align: center;
 	}
-	
+
 	#clock {
 	    clear: none;
 	    float: right;
 	    padding-right: 25px;
 	}
-	
+
 	#header {
 		border-bottom:1px solid #000;
 	}

@@ -16,9 +16,17 @@ handlers:
   static_files: index.html
   upload: index.html
 
-- url: /gadgets
-  static_dir: gadgets
+- url: /gadgets/metro/.*
+  script: gadgets/gadget.py
   
+- url: /gadgets/stop.xml
+  static_files: gadgets/stop.xml
+  upload: gadgets/stop.xml
+
+- url: /gadgets/style.css
+  static_files: gadgets/style.css
+  upload: gadgets/style.css
+
 - url: /js
   static_dir: js
   
