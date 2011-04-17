@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <Module>
-  <ModulePrefs title="Metro Estimates" height="200" author="Greg Tracy" author_email="help@smsmybus.com">
+  <ModulePrefs title="Metro Estimates" height="300" scrolling="false" author="Greg Tracy" author_email="help@smsmybus.com">
     <Require feature="dynamic-height"/>
     <Require feature="settitle"/>
   </ModulePrefs>
@@ -15,7 +15,7 @@
         <div id="arrivals">fetching arrivals...</div>
       </div>
 
-      <form style="padding-top:8px;" name="stopform" action="" method="get">
+      <form style="padding-top:4px;" name="stopform" action="" method="get">
         <input style="font-size:10px;" type="button" name="button" value="Change Stop" onClick="changeStop(this.form)">
         <input style="font-size:10px;" type="text" name="stopID" size="4" maxlength="4" value="">
       </form>
