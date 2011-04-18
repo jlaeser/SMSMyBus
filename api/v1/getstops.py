@@ -39,24 +39,34 @@ class MainHandler(webapp.RequestHandler):
       
       # route requests...
       if routeID is not '' and destination is '':
-          response = routeRequest(routeID, None)
+          json_response = routeRequest(routeID, None)
           utils.recordDeveloperRequest(devStoreKey,utils.GETSTOPS,self.request.query_string,self.request.remote_addr);
       elif routeID is not '' and destination is not '':
-          response = routeRequest(routeID, destination)
+          json_response = routeRequest(routeID, destination)
           utils.recordDeveloperRequest(devStoreKey,utils.GETSTOPS,self.request.query_string,self.request.remote_addr);
       elif stopID is not '':
-          response = stopLocationRequest(stopID)
+          json_response = stopLocationRequest(stopID)
           utils.recordDeveloperRequest(devStoreKey,utils.GETSTOPS,self.request.query_string,self.request.remote_addr);
       else:
           logging.debug("API: invalid request")
-          response = utils.buildErrorResponse('-1','Invalid Request parameters. Did you forget to include a routeID?')
+          json_response = utils.buildErrorResponse('-1','Invalid Request parameters. Did you forget to include a routeID?')
           utils.recordDeveloperRequest(devStoreKey,utils.GETSTOPS,self.request.query_string,self.request.remote_addr,'illegal query string combination');
 
       # encapsulate response in json
-      logging.debug('API: json response %s' % response);
-      self.response.headers['Content-Type'] = 'application/javascript'
-      self.response.out.write(simplejson.dumps(response))
+      logging.debug('API: json response %s' % json_response);
     
+      callback = self.request.get('callback')
+      if callback is not '':
+          self.response.headers['Content-Type'] = 'application/javascript'
+          self.response.headers['Access-Control-Allow-Origin'] = '*'
+          self.response.headers['Access-Control-Allow-Methods'] = 'GET'
+          response = callback + '(' + simplejson.dumps(json_response) + ');'
+      else:
+          self.response.headers['Content-Type'] = 'application/json'
+          response = simplejson.dumps(json_response)
+      
+      self.response.out.write(response)
+
     def post(self):
         self.response.headers['Content-Type'] = 'application/javascript'
         self.response.out.write(simplejson.dumps(utils.buildErrorResponse('-1','The API does not support POST requests')))
