@@ -73,7 +73,7 @@ def aggregateAsynchResults(sid):
       q = db.GqlQuery("SELECT * FROM BusStopAggregation WHERE sid = :1 ORDER BY time", sid)
       routes = q.fetch(10)
       if len(routes) == 0:
-          logging.error("We couldn't find this SMS transaction information %s. Chances are there aren't any matches with the request." % sid)
+          #logging.debug("We couldn't find results for transaction %s. Chances are there aren't any matches with the request." % sid)
           textBody = "Doesn't look good... Your bus isn't running right now!"
 
       return routes
