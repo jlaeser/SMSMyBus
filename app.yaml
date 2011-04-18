@@ -1,5 +1,5 @@
 application: smsmybus
-version: 20
+version: 21
 runtime: python
 api_version: 1
 
@@ -142,7 +142,7 @@ handlers:
   login: admin
 #
 # Custom displays
-- url: /motherfools
+- url: /motherfools.*
   static_files: motherfools/index.html
   upload: motherfools/index.html
 
