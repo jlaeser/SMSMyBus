@@ -46,23 +46,33 @@ class MainHandler(webapp.RequestHandler):
       
       # stopID requests...
       if stopID is not '' and routeID is '':
-          response = stopRequest(stopID, devStoreKey)
+          json_response = stopRequest(stopID, devStoreKey)
           utils.recordDeveloperRequest(devStoreKey,utils.GETARRIVALS,self.request.query_string,self.request.remote_addr);
       elif stopID is not '' and routeID is not '':
-          response = stopRouteRequest(stopID, routeID, devStoreKey)
+          json_response = stopRouteRequest(stopID, routeID, devStoreKey)
           utils.recordDeveloperRequest(devStoreKey,utils.GETARRIVALS,self.request.query_string,self.request.remote_addr);
       elif routeID is not '' and vehicleID is not '':
-          response = routeVehicleRequest(routeID, vehicleID, devStoreKey)
+          json_response = routeVehicleRequest(routeID, vehicleID, devStoreKey)
           utils.recordDeveloperRequest(devStoreKey,utils.GETVEHICLE,self.request.query_string,self.request.remote_addr);
       else:
           logging.debug("API: invalid request")
           utils.recordDeveloperRequest(devStoreKey,utils.GETARRIVALS,self.request.query_string,self.request.remote_addr,'illegal query string combination');
-          response = utils.buildErrorResponse('-1','Invalid Request parameters')
+          json_response = utils.buildErrorResponse('-1','Invalid Request parameters')
 
-      # encapsulate response in json
-      logging.debug('API: json response %s' % response);
-      self.response.headers['Content-Type'] = 'application/json'
-      self.response.out.write(simplejson.dumps(response))
+      # encapsulate response in json or jsonp
+      logging.debug('API: json response %s' % json_response);
+
+      callback = self.request.get('callback')
+      if callback is not '':
+          self.response.headers['Content-Type'] = 'application/javascript'
+          self.response.headers['Access-Control-Allow-Origin'] = '*'
+          self.response.headers['Access-Control-Allow-Methods'] = 'GET'
+          response = callback + '(' + simplejson.dumps(json_response) + ');'
+      else:
+          self.response.headers['Content-Type'] = 'application/json'
+          response = simplejson.dumps(json_response)
+      
+      self.response.out.write(response)
 
 ## end RequestHandler
 
