@@ -1,21 +1,12 @@
 import os
 import wsgiref.handlers
 import logging
-import time
-import re
 
 from django.utils import simplejson
 from geo.geomodel import geotypes
-
-from google.appengine.api import users
-from google.appengine.api.urlfetch import DownloadError
-from google.appengine.api.labs import taskqueue
-from google.appengine.api.labs.taskqueue import Task
 from google.appengine.ext import webapp
 from google.appengine.ext import db
 
-from google.appengine.runtime import apiproxy_errors
-import bus
 from api.v1 import utils
 from data_model import StopLocation
 
@@ -37,8 +28,10 @@ class MainHandler(webapp.RequestHandler):
       stopID = self.request.get('stopID')
       logging.debug('getstops request parameters...  routeID %s destination %s' % (routeID,destination))
       
-      # route requests...
-      if routeID is not '' and destination is '':
+      if utils.afterHours() is True:
+          # don't run these jobs during "off" hours
+	      json_response = utils.buildErrorResponse('-1','The Metro service is not currently running')
+      elif routeID is not '' and destination is '':
           json_response = routeRequest(routeID, None)
           utils.recordDeveloperRequest(devStoreKey,utils.GETSTOPS,self.request.query_string,self.request.remote_addr);
       elif routeID is not '' and destination is not '':
@@ -48,13 +41,12 @@ class MainHandler(webapp.RequestHandler):
           json_response = stopLocationRequest(stopID)
           utils.recordDeveloperRequest(devStoreKey,utils.GETSTOPS,self.request.query_string,self.request.remote_addr);
       else:
-          logging.debug("API: invalid request")
+          logging.error("API: invalid request")
           json_response = utils.buildErrorResponse('-1','Invalid Request parameters. Did you forget to include a routeID?')
           utils.recordDeveloperRequest(devStoreKey,utils.GETSTOPS,self.request.query_string,self.request.remote_addr,'illegal query string combination');
 
+      #logging.debug('API: json response %s' % json_response);    
       # encapsulate response in json
-      logging.debug('API: json response %s' % json_response);
-    
       callback = self.request.get('callback')
       if callback is not '':
           self.response.headers['Content-Type'] = 'application/javascript'
@@ -81,7 +73,7 @@ class GetNearbyStopsHandler(webapp.RequestHandler):
       # validate the request parameters
       devStoreKey = validateRequest(self.request,utils.GETNEARBYSTOPS)
       if devStoreKey is None:
-          logging.debug("unable to validate the request parameters")
+          logging.error("unable to validate the request parameters")
           self.response.headers['Content-Type'] = 'application/json'
           self.response.out.write(simplejson.dumps(utils.buildErrorResponse('-1','Illegal request parameters')))
           return
@@ -101,7 +93,7 @@ class GetNearbyStopsHandler(webapp.RequestHandler):
       response = nearbyStops(lat,lon,radius,routeID)
 
       # encapsulate response in json
-      logging.debug('API: json response %s' % response);
+      #logging.debug('API: json response %s' % response);
       self.response.headers['Content-Type'] = 'application/json'
       self.response.out.write(simplejson.dumps(response))
     
@@ -133,7 +125,7 @@ class NotSupportedHandler(webapp.RequestHandler):
       # validate the request parameters
       devStoreKey = validateRequest(self.request)
       if devStoreKey is None:
-          logging.debug("API: unsupported method")
+          logging.warning("API: unsupported method")
           self.response.headers['Content-Type'] = 'application/javascript'
           self.response.out.write(simplejson.dumps(utils.buildErrorResponse('-1','This method is not yet enabled')))
           return
@@ -152,7 +144,7 @@ def nearbyStops(lat,lon,radius,routeID):
         radius = 500
 
     if routeID is None or routeID == "":
-        logging.debug('nearbyStops (%s,%s,%s,%s)' % (lat,lon,radius,routeID))
+        #logging.debug('nearbyStops (%s,%s,%s,%s)' % (lat,lon,radius,routeID))
         results = StopLocation.proximity_fetch(
              StopLocation.all(),
              geotypes.Point(lat,lon),  # Or db.GeoPt
@@ -185,7 +177,7 @@ def nearbyStops(lat,lon,radius,routeID):
                                 'latitude':stop.location.lat,
                                 'longitude':stop.location.lon,
                                 }))
-            logging.debug('appending %s to route tracking list' % stop.stopID)
+            #logging.debug('appending %s to route tracking list' % stop.stopID)
             stop_tracking.append(stop.stopID)
 
     response_dict.update({'stop':stop_results})
@@ -216,7 +208,7 @@ def routeRequest(routeID,destination):
         if s.location is None:
             logging.error('API: ERROR, no location!?')
         else:
-            logging.error('API: latitude is %s' % s.location.lat)
+            logging.debug('API: latitude is %s' % s.location.lat)
             
         stop_results.append(dict({'stopID':s.stopID,
                           'intersection':s.intersection,
@@ -279,11 +271,10 @@ def validateRequest(request,type):
             utils.recordDeveloperRequest(devStoreKey,type,request.query_string,request.remote_addr,'both latitude and longitude values must be specified');
             return None
         elif radius is not None and radius is not '' and radius > '5000':
-            logging.debug('unable to validate getnearbystops call. illegal radius value of %s' % radius)
+            logging.error('unable to validate getnearbystops call. illegal radius value of %s' % radius)
             utils.recordDeveloperRequest(devStoreKey,type,request.query_string,request.remote_addr,'radius must be less than 5,000');
             return None
 
-    logging.debug("successfully validated command parameters")
     return devStoreKey
 
 ## end validateRequest()
@@ -291,7 +282,7 @@ def validateRequest(request,type):
 
 
 def main():
-  logging.getLogger().setLevel(logging.DEBUG)
+  logging.getLogger().setLevel(logging.WARN)
   application = webapp.WSGIApplication([('/api/v1/getstops', MainHandler),
                                         ('/api/v1/getstoplocation', MainHandler),
                                         ('/api/v1/getvehicles', NotSupportedHandler),

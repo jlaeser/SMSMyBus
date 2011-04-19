@@ -2,24 +2,12 @@ import os
 import wsgiref.handlers
 import logging
 import time
-import re
 
-from google.appengine.api import users
-from google.appengine.api import datastore_errors
-from google.appengine.api.urlfetch import DownloadError
-from google.appengine.api.labs import taskqueue
-from google.appengine.api.labs.taskqueue import Task
 from google.appengine.ext import webapp
-from google.appengine.ext import db
-
-from google.appengine.runtime import apiproxy_errors
-
 from django.utils import simplejson
 
 from api.v1 import utils
 from api import asynch
-
-from data_model import *
 
 class MainHandler(webapp.RequestHandler):
     # POST not support by the API
@@ -37,15 +25,17 @@ class MainHandler(webapp.RequestHandler):
           self.response.headers['Content-Type'] = 'application/javascript'
           self.response.out.write(simplejson.dumps(utils.buildErrorResponse('-1','Illegal developer key received')))
           return
-      
+
       # snare the inputs
       stopID = self.request.get('stopID')
       routeID = self.request.get('routeID')
       vehicleID = self.request.get('vehicleID')
       logging.debug('getarrivals request parameters...  stopID %s routeID %s vehicleID %s' % (stopID,routeID,vehicleID))
       
-      # stopID requests...
-      if stopID is not '' and routeID is '':
+      if utils.afterHours() is True:
+          # don't run these jobs during "off" hours
+	      json_response = utils.buildErrorResponse('-1','The Metro service is not currently running')
+      elif stopID is not '' and routeID is '':
           json_response = stopRequest(stopID, devStoreKey)
           utils.recordDeveloperRequest(devStoreKey,utils.GETARRIVALS,self.request.query_string,self.request.remote_addr);
       elif stopID is not '' and routeID is not '':
@@ -116,13 +106,14 @@ def stopRequest(stopID, devStoreKey):
                      'timestamp':utils.getLocalTimestamp()
                      }    
     
-    # @todo the really busy stops have their data cached. hook this up
-    # q = db.GqlQuery("SELECT * FROM LiveRouteStatus WHERE stopID = :1 ORDER BY dateAdded DESC LIMIT 24", stopID)
-    # routes = q.fetch(24)
-    
     # got fetch all of the data for this stop
     sid = stopID + str(devStoreKey) + str(time.time())
     routes = asynch.aggregateBusesAsynch(sid,stopID)
+    if routes is None or len(routes) == 0:
+        response_dict['status'] = '-1'
+        response_dict['description'] = 'No routes found for this stop'
+        response_dict['stopID'] = stopID
+        return response_dict
 
     # get the stop details
     stop_dict = {'stopID':stopID,}
@@ -162,10 +153,6 @@ def stopRouteRequest(stopID, routeID, devStoreKey):
                         }
         return response_dict
     
-    # query the live route store by stopID
-    #q = db.GqlQuery("SELECT * FROM LiveRouteStatus WHERE stopID = :1 and routeID = :2 ORDER BY dateAdded DESC LIMIT 3", stopID, routeID)
-    #routes = q.fetch(3)
-
     response_dict = {'status':'0',
                      'timestamp':utils.getLocalTimestamp()
                      }    
@@ -220,7 +207,7 @@ class DevKeyHandler(webapp.RequestHandler):
 
 
 def main():
-  logging.getLogger().setLevel(logging.DEBUG)
+  logging.getLogger().setLevel(logging.ERROR)
   application = webapp.WSGIApplication([('/api/v1/getarrivals', MainHandler),
                                         ('/api/v1/createdevkey/(.*)', DevKeyHandler),
                                         ],
