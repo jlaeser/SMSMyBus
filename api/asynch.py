@@ -1,22 +1,14 @@
 import logging
 
-from datetime import date
-from datetime import timedelta
-import time
-
 from google.appengine.api import urlfetch
 from google.appengine.api import memcache
 from google.appengine.api import quota
 from google.appengine.api.urlfetch import DownloadError
-from google.appengine.api.labs import taskqueue
-from google.appengine.api.labs.taskqueue import Task
 
 from google.appengine.ext import db
 
-from google.appengine.runtime import apiproxy_errors
 from BeautifulSoup import BeautifulSoup, Tag
 from data_model import RouteListing
-from data_model import DestinationListing
 from data_model import BusStopAggregation
 
 from api.v1 import utils
@@ -34,8 +26,8 @@ def aggregateBusesAsynch(sid, stopID, routeID=None):
         
     routeQuery = q.fetch(100)
     if len(routeQuery) == 0:
-        # this should never ever happen
-        logging.error("API: Huh? There are no matching stops for this ID?!? %s" % stopID)
+        # this can happen if the user passes in a bogus stopID
+        logging.error("API: User error. There are no matching stops for this ID?!? %s" % stopID)
         return None
     else:
         # create a bunch of asynchronous url fetches to get all of the route data
