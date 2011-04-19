@@ -9,26 +9,24 @@ function update(stopID, direction, key) {
 }
 
 function refreshTimes(stopID, Direction, key) {
-    var url = 'http://21.smsmybus.appspot.com/api/v1/getarrivals';
+    var url = 'http://www.smsmybus.com/api/v1/getarrivals';
     $.ajax({
       type: "GET",
       url: url,
-      data: {'key':key,'stopID':stopID,'callback':'apiResponse'},
+      data: {'key':key,'stopID':stopID},
       dataType: 'jsonp',
       success: arrivalsCallback,
-      error: function() { alert('getarrivals error!?'); },
     }); // .ajax
 } // refreshTimes
 
 function getLocation(stopID,key) {
-    var url = 'http://21.smsmybus.appspot.com/api/v1/getstoplocation';
+    var url = 'http://www.smsmybus.com/api/v1/getstoplocation';
     $.ajax({
       type: "GET",
       url: url,
-      data: {'key':key,'stopID':stopID,'callback':'apiResponse'},
+      data: {'key':key,'stopID':stopID},
       dataType: 'jsonp',
       success: locationCallback,
-      error: function() { alert('getlocation error!?'); },
     }); // .ajax
 }
 
