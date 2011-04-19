@@ -2,7 +2,6 @@ body {
 		margin:0;
 		padding:0;
 		border:0;			/* This removes the border around the viewport in old versions of IE */
-		height: 100%;
 		font-size: 12px;
 		font-family: Arial;
 		color: black;
@@ -53,7 +52,7 @@ body {
 }
 
 .coming-soon .route-label {
-   font-size: 1.5em;
+   font-size: 1.4em;
    color: black;
 }
 
@@ -74,7 +73,7 @@ body {
 }
 
 .minutes {
-	font-size: 1.5em;
+	font-size: 1.4em;
 	color: black;
 }
 
