@@ -2,15 +2,7 @@ cron:
 - description: aggregation table cleaner
   url: /aggr/cleandb
   schedule: every 15 minutes
-  
-- description: fetch web service data by stop
-  url: /rest/prefetch/1878/
-  schedule: every 1 minutes
 
-- description: fetch web service data by stop
-  url: /rest/prefetch/1505/
-  schedule: every 1 minutes
-  
 - description: reset quotas for the abusers
   url: /resetquotas
   schedule: every day 14:00
