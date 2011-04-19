@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <Module>
-  <ModulePrefs title="Metro Estimates" height="300" scrolling="false" author="Greg Tracy" author_email="help@smsmybus.com">
+  <ModulePrefs title="Metro Estimates" height="210" scrolling="false" author="Greg Tracy" author_email="help@smsmybus.com">
     <Require feature="dynamic-height"/>
     <Require feature="settitle"/>
   </ModulePrefs>
@@ -33,7 +33,7 @@
           refreshTimes();
           getStopAddress();
 
-          $(this).everyTime("61s",function() {
+          $(this).everyTime("121s",function() {
             refreshTimes();
           });
       });
@@ -95,8 +95,9 @@
                   var minutes = routes[i].minutes;
                   var destination = routes[i].destination
 
-      	           if (i>2) {
+      	           if (i>3) {
       	               $("#arrivals").append('<span class="arrival"> ... #'+routeID+' in '+minutes+' min </span>'); 
+                       gadgets.window.adjustHeight();
       	               return true;
       	           } //limit number of rows
           	       destination = destination.substring(0,12); //limit the length in case of long ones (unknown risk)
@@ -107,7 +108,7 @@
                    }
       	          $("#arrivals").append(time);        	          
               }
-          }   
+          }
           gadgets.window.adjustHeight();
        } // success function
 	
