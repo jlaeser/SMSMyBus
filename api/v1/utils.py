@@ -3,7 +3,6 @@ import logging
 import time
 import re
 
-from google.appengine.api import users
 from google.appengine.api import memcache
 from google.appengine.ext import db
 
@@ -21,6 +20,7 @@ def validateDevKey(devKey):
         if storeKey is None:
             return None
         else:
+            logging.error('API : devkey cahce miss!')
             memcache.set(devKey, storeKey)
     
     return storeKey
@@ -44,7 +44,7 @@ def getLocalTimestamp():
     ltime_hour = ltime.tm_hour - 5  # convert to madison time
     ltime_hour += 24 if ltime_hour < 0 else 0
     ltime_min = ltime_hour * 60 + ltime.tm_min
-    logging.debug("local time... %s (%s:%s) day minutes %s" % (ltime,ltime_hour,ltime.tm_min,ltime_min))
+    #logging.debug("local time... %s (%s:%s) day minutes %s" % (ltime,ltime_hour,ltime.tm_min,ltime_min))
     
     tstamp_min = str(ltime.tm_min) if ltime.tm_min >= 10 else ("0"+str(ltime.tm_min))
     tstamp_hour = str(ltime_hour) if ltime_hour <=12 else str(ltime_hour-12)
@@ -61,7 +61,7 @@ def computeCountdownMinutes(arrivalTime):
     ltime_hour = ltime.tm_hour - 5
     ltime_hour += 24 if ltime_hour < 0 else 0
     ltime_min = ltime_hour * 60 + ltime.tm_min
-    logging.debug("local time: %s hours, or %s minutes"  % (ltime_hour,ltime_min))
+    #logging.debug("local time: %s hours, or %s minutes"  % (ltime_hour,ltime_min))
     
     # pull out the arrival time
     #logging.debug("API: parsing arrival time of %s" % arrivalTime)
@@ -69,7 +69,7 @@ def computeCountdownMinutes(arrivalTime):
     btime_hour = arrival_hour = int(m.group(1))
     btime_hour += 12 if arrivalTime.find('pm') > 0 and arrival_hour < 12 else 0
     btime_min = btime_hour * 60 + int(m.group(2))
-    logging.debug("computing countdown with %s. %s hours %s minutes" % (arrivalTime,btime_hour,btime_min))
+    #logging.debug("computing countdown with %s. %s hours %s minutes" % (arrivalTime,btime_hour,btime_min))
                   
     delta_in_min = btime_min - ltime_min
     #logging.debug('API: countdown is %s minutes'% delta_in_min)
@@ -87,13 +87,26 @@ def buildErrorResponse(error,description):
             
 ## end jsonError()    
 
+# Checks to see if the current time is during the hours
+# in which the Metro doesn't operate
+#
+def afterHours():
+      ltime = time.localtime()
+      ltime_hour = ltime.tm_hour - 5
+      ltime_hour += 24 if ltime_hour < 0 else 0
+      if ltime_hour > 1 and ltime_hour < 6:
+	      return True
+      else:
+          return False
+## end afterHours()
+
 def getDirectionLabel(directionID):
     directionLabel = memcache.get("directionID")
     if directionLabel is None:
         q = db.GqlQuery("SELECT * FROM DestinationListing WHERE id = :1", directionID)
         directionQuery = q.fetch(1)
         if len(directionQuery) > 0:
-            logging.debug("Found destination ID mapping... %s :: %s" % (directionQuery[0].id,directionQuery[0].label))
+            #logging.debug("Found destination ID mapping... %s :: %s" % (directionQuery[0].id,directionQuery[0].label))
             directionLabel = directionQuery[0].label
             memcache.set(directionID, directionLabel)
         else:
