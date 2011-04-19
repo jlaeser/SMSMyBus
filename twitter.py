@@ -114,7 +114,7 @@ def sendTwitterResponse(handle, textBody, stopID, routeID):
 ## end sendTwitterResponse
 
 def main():
-  logging.getLogger().setLevel(logging.DEBUG)
+  logging.getLogger().setLevel(logging.ERROR)
   application = webapp.WSGIApplication([('/twitter/request', TwitterHandler),
                                         ],
                                        debug=True)
