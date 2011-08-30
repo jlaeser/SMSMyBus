@@ -5,10 +5,43 @@
 <html>
   <head>
     <meta name="description" content="A telephone application that lets you check Madison bus schedules in real time.">
-    <meta name="keywords" content"Twilio, bus schedule, SMS, madison, metro, mymetro, mymetrobus, google app engine, cloud computing, telephone, telephony, smsmybus">
+    <meta name="keywords" content"gov20, gov2.0, Twilio, bus schedule, SMS, madison, metro, mymetro, mymetrobus, google app engine, cloud computing, telephone, telephony, smsmybus">
     <meta name="google-site-verification" content="H9cmKbLovDFqlBKn-lLv7ojvKOQ599AKKsJ7QgrM1fA" />
     <title>SMSMyBus - Check the bus schedule in real time</title>
     <link rel="stylesheet" href="css/style.css">
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.0/jquery.min.js"></script>
+    <script type="text/javascript" src="js/jquery.validate.min.js"></script>
+
+    <script type="text/javascript">
+      jQuery.validator.setDefaults({
+      	debug: true,
+      	success: "valid"
+      });;    
+    </script>
+
+    <script>
+     $(document).ready(function(){
+       jQuery.validator.addMethod("phoneUS", function(phone_number, element) {
+         phone_number = phone_number.replace(/\s+/g, ""); 
+	     return this.optional(element) || phone_number.length > 9 &&
+	    	      phone_number.match(/^(1-?)?(\([2-9]\d{2}\)|[2-9]\d{2})-?[2-9]\d{2}-?\d{4}$/);
+       }, "Please specify a valid phone number");
+       jQuery.validator.setDefaults({
+         submitHandler: function(form) {
+             form.submit();
+         }
+       });
+
+      $("#phoneform").validate({
+        rules: {
+          phone: {
+            required: true,
+            phoneUS: true
+          }
+        }
+      });
+     });
+    </script>
   </head>
 
 <body>  
@@ -45,35 +78,32 @@
  <div id="spacer"></div>
  
  <div id="extras">
-  <div id="other-interfaces">
-    <h2>More ways to find your bus!</h2>
+
+  <div id="pay-interfaces">
+    <h2>Get arrival estimates via text messages</h2>
+    <p>Due to the overwhelming popularity of the SMS service, I can no longer offer it for free. But 
+    don't dispare, you can still get your real-time arrival estimates on the go for a mere $10 a year.</p>
+    <form id="phoneform" method="post" action="/pay">
+     <input type="submit" value="sign me up!"/>
+     <input id="phone" type="text" size="10" name="phone"/> <span style="font-size:12px">enter your mobile number (eg 608-555-1234)</span>
+    </form>
+  </div>
+  <div id="free-interfaces">
+    <h2>More (free) ways to find your bus! <g:plusone></g:plusone></h2>
     <p>The following methods can be used to query the Metro system as well. Follow the same rules as above
     when you're searching for a bus at a particular stop or <i>all</i> buses for a stop.</p>
-    <h3>Google Talk / Jabber</h3>
-    <p>Jabber your query to <strong>smsmybus@appspot.com</strong>, and we'll reply back with your results. The syntax is identical to the SMS syntax.</p>
+    <h3>Google Chat / Jabber</h3>
+    <p>GChat your query to <strong>smsmybus@appspot.com</strong>, and we'll reply back with your results. The syntax is identical to the SMS syntax.</p>
     <h3>Email</h3>
     <p>Email your query to <a href=mailto:request@smsmybus.com>request@smsmybus.com</a> with the 
     details in the subject line, and I'll reply with your details.</p>
-    <h3>Twitter (beta)</h3>
+    <h3>Twitter (alpha)</h3>
     <p>Send a dm to <a href=http://twitter.com/smsmybus>smsmybus</a> and I'll reply back. Note that this requires that we're following each other. Please <a href=mailto:feedback@smsmybus.com>send me your feedback</a>.</p>
     <h3>Phone (beta)</h3>
     <p>Dial in using the same number - 608.467.1603 - and follow the prompts. Please <a href=mailto:feedback@smsmybus.com>send me your feedback</a>.</p>
-    <h2>Invite your friends</h2>
-    <p>You can invite your friends to use the SMS service by sending me their mobile number. Just
-    send me a text with "invite ##########" in the message and I'll forward an invitation to them.</p>
     <h2>Are you a developer?</h2>
     <p>Take advantage of the <a href=/api/>SMSMyBus API</a> to build your own transit application for the Madison Metro.</p>
     <p>The API provides access to real-time arrival estimates, location data, and more. Go check out the <a href=/api/>documentation</a>.</p>
-  </div>
- 
-  <div id="donate">
-   <form action="https://www.paypal.com/cgi-bin/webscr" method="post">
-   <input type="hidden" name="cmd" value="_s-xclick">
-   <input type="hidden" name="hosted_button_id" value="99TCXWRTE6PHW">
-   <input type="image" src="https://www.paypal.com/en_US/i/btn/btn_donateCC_LG.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">
-   <img alt="" border="0" src="https://www.paypal.com/en_US/i/scr/pixel.gif" width="1" height="1">
-   </form>
-   <br><strong>Please consider a donation to help cover our costs.</strong>
   </div>
  
  </div>
@@ -86,14 +116,15 @@
      <a href=http://twilio.com><img src="img/twilio-logo.jpg" alt="twilio" height="30" width="30"></a>
   </div>
   <div id="me">
-   <a href=http://www.gregtracy.com>Greg Tracy</a> - <a href=http://twitter.com/gregtracy>@gregtracy</a>
+   <a href=http://twitter.com/smsmybus>@smsmybus</a>
   </div>
   <div id="contact-container">
-   terms - privacy - <a href="mailto:greg@gregtracy.com?subject=SMSMyBus%20feedback">feedback</a>
+   terms - privacy - <a href="mailto:help@smsmybus.com?subject=SMSMyBus%20feedback">feedback</a>
   </div>
  </div>
 </div>
 
+<script type="text/javascript" src="http://apis.google.com/js/plusone.js"></script>
 
 <script type="text/javascript">
 var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");

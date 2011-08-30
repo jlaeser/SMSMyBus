@@ -1,5 +1,5 @@
 application: smsmybus
-version: 21
+version: paypal
 runtime: python
 api_version: 1
 
@@ -15,6 +15,9 @@ handlers:
 - url: /
   static_files: index.html
   upload: index.html
+
+- url: /pay.*
+  script: pay/main.py
 
 - url: /gadgets/metro/.*
   script: gadgets/gadget.py

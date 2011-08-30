@@ -1,6 +1,23 @@
 from google.appengine.ext import db
 from geo.geomodel import GeoModel
 
+class Purchase(db.Model):
+  '''a completed transaction'''
+  purchaser = db.StringProperty()
+  created = db.DateTimeProperty(auto_now_add=True)
+  status = db.StringProperty( choices=( 'NEW', 'CREATED', 'ERROR', 'CANCELLED', 'RETURNED', 'COMPLETED' ) )
+  status_detail = db.StringProperty()
+  secret = db.StringProperty() # to verify return_url
+  debug_request = db.TextProperty()
+  debug_response = db.TextProperty()
+  paykey = db.StringProperty()
+
+class SMSUser(db.Model):
+  phone         = db.StringProperty()
+  purchase      = db.ReferenceProperty(Purchase)
+  creation_date = db.DateTimeProperty(auto_now_add=True)
+## end SMSUser
+
 class PhoneLog(db.Model):
   phone       = db.StringProperty()
   date        = db.DateTimeProperty(auto_now_add=True)
