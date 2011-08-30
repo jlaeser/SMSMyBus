@@ -1,0 +1,42 @@
+{% extends "base.htm" %}
+
+{% block content %}
+
+ <div style="text-align:left;padding:20px 10px 20px;width:60%;float:left;">
+  <p>Welcome to SMSMyBus and thank you for your interest in the SMS service!</p>
+  <p>If <strong>{{phone}}</strong> is not your number, please go back and re-enter the mobile number 
+     you'd like to use for the SMS service.</p>
+  <p>Please note that in addition to this annual subscription fee to access the service, 
+     <strong>you are responsible for any service charges</strong> related to the text messaging plan on your phone.</p>
+  <p>Once you complete your purchase via the PayPal button, you'll receive a text message on 
+     your mobile phone and you'll be fully registered for the SMS service for one year.</p>
+ </div>
+ <br/>
+ <div style="float:right;text-align:center;width:35%;">
+    <center><span style="font-size:20px;">one year subscription for<br/>{{phone}}</span><br/><span style="font-size:32px;">$10</span></center>
+        <form action='https://sandbox.paypal.com/webapps/adaptivepayment/flow/pay' target='PPDGFrame'>
+            <input id='type'   type='hidden' name='expType' value='light'> <!-- value is "light" or "mini"-->
+            <input id='paykey' type='hidden' name='payKey' value={{paykey}}><br> <!--Change to hidden. Insert Generated PayKey Here-->
+            <input id='preapprovalkey"' type='hidden' name='preapprovalkey"' value=''> <!--Optional. Insert PreApproval Key (If available) Here-->
+            
+            <input id='submitBtn' type="image" src="https://www.paypalobjects.com/WEBSCR-640-20110429-1/en_US/i/btn/btn_paynowCC_LG.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">
+            <img alt="" border="0" src="https://www.paypalobjects.com/WEBSCR-640-20110429-1/en_US/i/scr/pixel.gif" width="1" height="1">
+        </form>
+
+        <script>
+            var flow_Form = new PAYPAL.apps.DGFlow({trigger:"submitBtn",expType:"light"});        <!--Initialization of the library-->
+        </script>
+ </div>
+<p>
+<ul>
+{% for item in items %}
+  <li>{{ item.title }} for ${{ item.price_dollars|floatformat:2 }}<br/>
+    <img src="/image/{{ item.key }}/" alt="{{ item.title }}"/><br/>
+    <a href="/buy/{{ item.key }}/">Buy this item</a>
+  </li>
+{% endfor %}
+</ul>
+</p>
+<p>
+</p>
+{% endblock %}
