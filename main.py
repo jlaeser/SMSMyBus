@@ -10,9 +10,7 @@ from datetime import timedelta
 from google.appengine.api import mail
 from google.appengine.api import xmpp
 from google.appengine.api import quota
-from google.appengine.api import urlfetch
 from google.appengine.api import memcache
-from google.appengine.api.urlfetch import DownloadError
 from google.appengine.api.labs import taskqueue
 from google.appengine.api.labs.taskqueue import Task
 
@@ -25,7 +23,6 @@ from google.appengine.runtime import apiproxy_errors
 
 import twilio
 import bus
-import rest
 
 from data_model import PhoneLog
 from data_model import RouteListing
