@@ -19,7 +19,7 @@ hr {
 a {
   text-decoration: none;
   font-size: 12px;
-  color: #888888;
+  color: #008800;
 }
 
 a img {
@@ -122,7 +122,6 @@ a:visited {
 
 #extras {
   width: 720px;
-  height: 125px;
   margin: auto;
   margin-bottom: 20px;
   padding-top: 20px;
@@ -133,11 +132,16 @@ a:visited {
 #extras h3 { font-size: 16px; margin-bottom: 2px; }
 #extras p { margin-top: 0px; padding-left: 20px; font-size: 13px; }
 
-#other-interfaces {
-  float: left;
-  width: 70%;
-  padding-left: 25px;
+#pay-interfaces {
+  width: 100%;
+  border: 2px dotted red;
 }
+
+#free-interfaces {
+  width: 100%;
+  padding-left: 15px;
+}
+#pay-interfaces form { padding: 12px; }
 
 #donate {
   float: right;
