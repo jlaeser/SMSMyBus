@@ -201,7 +201,6 @@ def routeRequest(routeID,destination):
     response_dict = {'status':'0',
                     }    
     
-    # there should only be results. we assume the results are sorted by time
     route_dict = {'routeID':routeID,}
     stop_results = []
     for s in stops:
