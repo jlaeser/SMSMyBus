@@ -6,6 +6,7 @@ from google.appengine.api import quota
 from google.appengine.api.urlfetch import DownloadError
 
 from google.appengine.ext import db
+from google.appengine.datastore import entity_pb
 
 from BeautifulSoup import BeautifulSoup, Tag
 from data_model import RouteListing
@@ -24,8 +25,8 @@ def aggregateBusesAsynch(sid, stopID, routeID=None):
     else:
         q = db.GqlQuery("SELECT * FROM RouteListing WHERE stopID = :1 AND route = :2",stopID,routeID)
         
-    routeQuery = q.fetch(100)
-    if len(routeQuery) == 0:
+    routes = getRouteListing(stopID,routeID)
+    if len(routes) == 0:
         # this can happen if the user passes in a bogus stopID
         logging.error("API: User error. There are no matching stops for this ID?!? %s" % stopID)
         return None
@@ -33,7 +34,7 @@ def aggregateBusesAsynch(sid, stopID, routeID=None):
         # create a bunch of asynchronous url fetches to get all of the route data
         rpcs = []
         memcache.set(sid,0)
-        for r in routeQuery:
+        for r in routes:
             rpc = urlfetch.create_rpc()
             rpc.callback = create_callback(rpc,stopID,r.route,sid,r.direction)
             logging.info("API: initiating asynchronous fetch for %s" % r.scheduleURL)
@@ -46,7 +47,7 @@ def aggregateBusesAsynch(sid, stopID, routeID=None):
             logging.info('waiting on rpc call... %s ' % memcache.get(sid))
             rpc.wait()
         
-        # all call should be complete at this point    
+        # all calls should be complete at this point    
         while memcache.get(sid) > 0 :
             logging.info('API: ERROR : uh-oh. in waiting loop... %s' % memcache.get(sid))
             rpc.wait()
@@ -143,3 +144,45 @@ def handle_result(rpc,stopID,routeID,sid,directionID):
 # Use a helper function to define the scope of the callback.
 def create_callback(rpc,stopID,routeID,sid,directionID):
     return lambda: handle_result(rpc,stopID,routeID,sid,directionID)
+    
+# Convenience method to extract RouteListing
+def getRouteListing(stopID,routeID=None):
+    
+    if routeID is None:
+        key = 'routelisting:%s' % stopID
+    else:
+        key = 'routelisting:%s:%s' % (stopID,routeID)
+    
+    entities = deserialize_entities(memcache.get(key))
+    if not entities:
+        if routeID is None:
+            entities = db.GqlQuery("SELECT * FROM RouteListing WHERE stopID = :1",stopID).fetch(50)
+        else:
+            entities = db.GqlQuery("SELECT * FROM RouteListing WHERE stopID = :1 AND route = :2",stopID,routeID).fetch(50)
+        if entities:
+            memcache.set(key, serialize_entities(entities))
+        
+    return entities
+
+## end
+
+def serialize_entities(models):
+    if models is None:
+        return None
+    elif isinstance(models, db.Model):
+        # Just one instance
+        return db.model_to_protobuf(models).Encode()
+    else:
+        # A list
+        return [db.model_to_protobuf(x).Encode() for x in models]
+
+def deserialize_entities(data):
+    if data is None:
+        return None
+    elif isinstance(data, str):
+        # Just one instance
+        return db.model_from_protobuf(entity_pb.EntityProto(data))
+    else:
+        return [db.model_from_protobuf(entity_pb.EntityProto(x)) for x in data]
+        
+        
