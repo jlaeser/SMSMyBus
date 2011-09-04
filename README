@@ -1,0 +1,8 @@
+This project is a civic hacking project that makes the Madison Metro bus system more accessible.
+
+The primary goal is to provide access to real-time arrival estimates via a 
+variety of mobile interfaces - SMS, chat, email and phone. This project also includes an API that abstracts this work.
+
+All of the ugly screen scraping hacks are here. Some code is used. Others is not. 
+
+http://smsmybus.com
