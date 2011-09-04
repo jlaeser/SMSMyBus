@@ -1,5 +1,5 @@
 application: smsmybus
-version: 21
+version: api-tuning
 runtime: python
 api_version: 1
 
@@ -140,6 +140,12 @@ handlers:
 - url: /droptable/.*
   script: crawl/crawler.py
   login: admin
+  
+# debug : create entities
+- url: /debug/create/RouteListing
+  script: crawl/crawler.py
+  login: admin
+  
 #
 # Custom displays
 - url: /motherfools.*
