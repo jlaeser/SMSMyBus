@@ -18,6 +18,10 @@ class MainHandler(webapp.RequestHandler):
     
     def get(self):
       
+      if utils.afterHours() is True:
+          # don't run these jobs during "off" hours
+	      json_response = utils.buildErrorResponse('-1','The Metro service is not currently running')
+
       # validate the request parameters
       devStoreKey = validateRequest(self.request)
       if devStoreKey is None:
@@ -32,10 +36,7 @@ class MainHandler(webapp.RequestHandler):
       vehicleID = self.request.get('vehicleID')
       logging.debug('getarrivals request parameters...  stopID %s routeID %s vehicleID %s' % (stopID,routeID,vehicleID))
       
-      if utils.afterHours() is True:
-          # don't run these jobs during "off" hours
-	      json_response = utils.buildErrorResponse('-1','The Metro service is not currently running')
-      elif stopID is not '' and routeID is '':
+      if stopID is not '' and routeID is '':
           json_response = stopRequest(stopID, devStoreKey)
           utils.recordDeveloperRequest(devStoreKey,utils.GETARRIVALS,self.request.query_string,self.request.remote_addr);
       elif stopID is not '' and routeID is not '':
