@@ -9,7 +9,7 @@ from google.appengine.ext import db
 from data_model import DeveloperRequest
 
 def validateDevKey(devKey):
-    
+
     if devKey is None:
         return None
    
@@ -123,11 +123,16 @@ GETSTOPS = "get stops"
 GETNEARBYSTOPS = "get nearby stops"
 
 def recordDeveloperRequest(devKey,type,terms,ipaddr,error='success'):
-    req = DeveloperRequest()
-    req.developer = devKey
-    req.type = type
-    req.error = error
-    req.requestTerms = terms
-    req.remoteAddr = ipaddr
-    req.put()
+
+    # this is too damn expensive to store all of these on app engine
+    # so we're going to ignore these requests
+    if False:
+      req = DeveloperRequest()
+      req.developer = devKey
+      req.type = type
+      req.error = error
+      req.requestTerms = terms
+      req.remoteAddr = ipaddr
+      req.put()
+
 ## end recordDeveloperRequest()
