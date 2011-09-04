@@ -14,7 +14,7 @@ from google.appengine.ext import db
 from google.appengine.ext.webapp import template
 
 from google.appengine.runtime import apiproxy_errors
-from main import PhoneLog
+from data_model import PhoneLog
 
 
 class MainHandler(webapp.RequestHandler):
