@@ -90,7 +90,7 @@ class GetNearbyStopsHandler(webapp.RequestHandler):
       destination = self.request.get('destination')
       
       # stop location requests...
-      response = nearbyStops(lat,lon,radius,routeID)
+      json_response = nearbyStops(lat,lon,radius,routeID)
 
       # encapsulate response in json
       #logging.debug('API: json response %s' % response);
