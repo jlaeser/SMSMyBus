@@ -94,8 +94,17 @@ class GetNearbyStopsHandler(webapp.RequestHandler):
 
       # encapsulate response in json
       #logging.debug('API: json response %s' % response);
-      self.response.headers['Content-Type'] = 'application/json'
-      self.response.out.write(simplejson.dumps(response))
+      callback = self.request.get('callback')
+      if callback is not '':
+          self.response.headers['Content-Type'] = 'application/javascript'
+          self.response.headers['Access-Control-Allow-Origin'] = '*'
+          self.response.headers['Access-Control-Allow-Methods'] = 'GET'
+          response = callback + '(' + simplejson.dumps(json_response) + ');'
+      else:
+          self.response.headers['Content-Type'] = 'application/json'
+          response = simplejson.dumps(json_response)
+
+      self.response.out.write(response)
     
     def post(self):
         self.response.headers['Content-Type'] = 'application/json'
