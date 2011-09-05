@@ -20,7 +20,7 @@ def validateDevKey(devKey):
         if storeKey is None:
             return None
         else:
-            logging.error('API : devkey cahce miss!')
+            logging.error('API : devkey cache miss!')
             memcache.set(devKey, storeKey)
     
     return storeKey
