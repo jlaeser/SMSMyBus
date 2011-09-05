@@ -11,8 +11,7 @@ from google.appengine.api import mail
 from google.appengine.api import xmpp
 from google.appengine.api import quota
 from google.appengine.api import memcache
-from google.appengine.api.labs import taskqueue
-from google.appengine.api.labs.taskqueue import Task
+from google.appengine.api.taskqueue import Task
 
 from google.appengine.ext import db
 from google.appengine.ext import webapp

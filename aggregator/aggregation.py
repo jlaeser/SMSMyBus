@@ -8,7 +8,7 @@ from google.appengine.api import mail
 from google.appengine.api import urlfetch
 from google.appengine.api import memcache
 from google.appengine.api import xmpp
-from google.appengine.api.labs.taskqueue import Task
+from google.appengine.api.taskqueue import Task
 from google.appengine.ext import webapp
 from google.appengine.ext import db
 from google.appengine.ext.webapp.util import run_wsgi_app
@@ -22,8 +22,6 @@ import bus
 import twitter
 import email
 import config
-
-from data_model import BusStopAggregation
 
 # 
 # this handler is intended to be run by a cron job
