@@ -71,6 +71,18 @@ hr {
 	background: #eeeeee;
 }
 
+#sub-menu {
+  font-size: 20px;
+  text-align: center;
+  margin: auto;
+}
+#sub-menu a {
+  color: black;
+}
+#sub-menu a:hover {
+  color: red;
+}
+
 .selected {
 	background: white;
 }
