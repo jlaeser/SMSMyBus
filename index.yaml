@@ -5,12 +5,6 @@ indexes:
   - name: date
     direction: desc
   - name: phone
-  
-- kind: RouteListing
-  properties:
-  - name: key
-  - name: route
-    direction: desc
 
 - kind: RouteListing
   properties:
@@ -22,48 +16,15 @@ indexes:
   properties:
   - name: stopID
   - name: route
-    direction: desc
-
-- kind: RouteListing
-  properties:
-  - name: scheduleURL
-  - name: route
-    direction: desc
-    
-- kind: RouteListing
-  properties:
-  - name: stopID
-  - name: route
   
 - kind: DirectionListing
   properties:
   - name: key
   - name: id
     direction: desc
-    
-- kind: RouteListing
-  properties:
-  - name: sid
-  - name: time
 
 - kind: BusStopAggregation
   properties:
   - name: sid
   - name: time
   - name: dateAdded
-  
-- kind: BusStopAggregation
-  properties:
-  - name: routeID
-  - name: stopID
-  - name: dateAdded
-    direction: desc
-    
-- kind: LiveRouteStatus
-  properties:
-  - name: stopID
-  - name: dateAdded
-    direction: desc
-  - name: time
-    direction: desc
-    

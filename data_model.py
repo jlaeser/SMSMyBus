@@ -4,9 +4,9 @@ from geo.geomodel import GeoModel
 class PhoneLog(db.Model):
   phone       = db.StringProperty()
   date        = db.DateTimeProperty(auto_now_add=True)
-  body        = db.StringProperty(multiline=True)
-  smsID       = db.StringProperty()
-  outboundSMS = db.StringProperty(multiline=True)
+  body        = db.StringProperty(multiline=True,indexed=False)
+  smsID       = db.StringProperty(indexed=False)
+  outboundSMS = db.StringProperty(multiline=True,indexed=False)
 ## end phoneLog
 
 # note that a stop extends GeoModel   
@@ -22,7 +22,7 @@ class RouteListing(db.Model):
     route        = db.StringProperty()
     direction    = db.StringProperty()
     stopID       = db.StringProperty()
-    scheduleURL  = db.StringProperty()
+    scheduleURL  = db.StringProperty(indexed=False)
     stopLocation = db.ReferenceProperty(StopLocation,collection_name="stops")    
 ## end RouteListing
 
@@ -33,12 +33,12 @@ class DestinationListing(db.Model):
 
 class BusStopAggregation(db.Model):
     dateAdded   = db.DateTimeProperty(auto_now_add=True)
-    routeID     = db.StringProperty()
-    stopID      = db.StringProperty()
-    destination = db.StringProperty()
-    arrivalTime = db.StringProperty()
+    routeID     = db.StringProperty(indexed=False)
+    stopID      = db.StringProperty(indexed=False)
+    destination = db.StringProperty(indexed=False)
+    arrivalTime = db.StringProperty(indexed=False)
     time        = db.IntegerProperty()
-    text        = db.StringProperty(multiline=True)
+    text        = db.StringProperty(multiline=True,indexed=False)
     sid         = db.StringProperty()
 ## end BusStopAggregation
 
