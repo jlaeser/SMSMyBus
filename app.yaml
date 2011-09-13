@@ -124,10 +124,6 @@ handlers:
   script: api/feed.py
   login: admin
 
-- url: /api/
-  static_files: api/index.html
-  upload: api/index.html  
-
 - url: /api/(.*\.(html|css|js))
   static_files: api/\1
   upload: api/(.*\.(html|css|js))
@@ -136,6 +132,10 @@ handlers:
   script: api/v1/getarrivals.py
   login: admin
   
+- url: /api.*
+  static_files: api/index.html
+  upload: api/index.html
+
 # drop table
 - url: /droptable/.*
   script: crawl/crawler.py
@@ -145,7 +145,11 @@ handlers:
 - url: /debug/create/RouteListing
   script: crawl/crawler.py
   login: admin
-  
+
+# debug : start table drop in background
+- url: /debug/drop/DeveloperRequest
+  script: crawl/crawler.py
+  login: admin
 #
 # Custom displays
 - url: /motherfools.*
