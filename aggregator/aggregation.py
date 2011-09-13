@@ -35,12 +35,12 @@ class CleanAggregatorHandler(webapp.RequestHandler):
       dateCheck = dateCheck.isoformat()
       #logging.info("Running the cleaner for the aggregation table... %s" % dateCheck)
       q = db.GqlQuery("SELECT * FROM BusStopAggregation WHERE dateAdded < DATE(:1)", dateCheck)
-      cleanerQuery = q.fetch(100)
+      cleanerQuery = q.fetch(1000)
       msg = 'empty message'
       while len(cleanerQuery) > 0:
           #logging.debug("getting ready to delete %s records!" % len(cleanerQuery))
           db.delete(cleanerQuery)
-          cleanerQuery = q.fetch(100)
+          cleanerQuery = q.fetch(1000,1000)
 
       self.response.out.write(msg)
       return
