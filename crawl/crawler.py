@@ -9,7 +9,7 @@ from google.appengine.api import memcache
 from google.appengine.api import datastore_errors
 from google.appengine.api.urlfetch import DownloadError
 from google.appengine.api.labs import taskqueue
-from google.appengine.api.labs.taskqueue import Task
+from google.appengine.api.taskqueue import Task
 from google.appengine.ext import webapp
 from google.appengine.ext import db
 from google.appengine.ext.webapp import template
@@ -21,6 +21,7 @@ from BeautifulSoup import BeautifulSoup, Tag
 
 from data_model import RouteListing
 from data_model import StopLocation
+from data_model import DeveloperKeys
 
 
 URLBASE = "http://webwatch.cityofmadison.com/webwatch/ada.aspx?"
@@ -157,13 +158,17 @@ class CrawlingTaskHandler(webapp.RequestHandler):
 ## end CrawlingTask()
 
 class DropTableHandler(webapp.RequestHandler):
-    def get(self, table=""):
-        qstring = "select * from " + table
+    def post(self, model=""):
+        logging.debug('HEADS UP -> we have a request to drop the entities in the %s model' % model)
+        self.get(model)
+        
+    def get(self, model=""):
+        qstring = "select * from " + model
         logging.info("query string is... %s" % qstring)
         q = db.GqlQuery(qstring)
         results = q.fetch(500)
         while results:
-            if table == 'RouteListing':
+            if model == 'RouteListing':
                 for r in results:
                     try:
                         sLocation = r.stopLocation
@@ -182,7 +187,26 @@ class DropTableHandler(webapp.RequestHandler):
 
 ## end
 
-    
+class StartTableDrop(webapp.RequestHandler):
+    def get(self,model=""):
+        url = '/droptable/%s' % model
+        logging.error('getting ready to start task to drop the %s table' % model)
+        task = Task(url=url, params={})
+        task.add('crawler')
+        self.response.out.write('got it. started the background task to delete all %s entities' % model)
+
+class CreateDeveloperKeysHandler(webapp.RequestHandler):
+    def get(self):
+      key = DeveloperKeys()
+      key.developerName = 'tester'
+      key.developerKey = 'mfoolskiosk'
+      key.developerEmail = 'gtracy@gmail.com'
+      key.requestCounter = 0
+      key.errorCounter = 0
+      key.put()
+
+## end
+
 class RouteListHandler(webapp.RequestHandler):
     def get(self,routeID=""):
       logging.info("fetching all stop locations for route %s" % routeID)
@@ -228,6 +252,8 @@ def main():
                                         ('/crawlingtask', CrawlingTaskHandler),
                                         ('/routelist/(.*)', RouteListHandler),
                                         ('/droptable/(.*)', DropTableHandler),
+                                        ('/debug/drop/(.*)', StartTableDrop),
+                                        ('/debug/create/newkey', CreateDeveloperKeysHandler),
                                         ],
                                        debug=True)
   wsgiref.handlers.CGIHandler().run(application)
