@@ -18,6 +18,9 @@ from data_model import RouteListing
 
 class MapHandler(webapp.RequestHandler):
     def get(self):
+      self.response.out.write('Snap. This data has gotten so big, it needs to be optimized. This page is disabled for now. :(')
+      return
+      
       # review the results for popular stops
       reqs = getRequestedStops();
       stops_stats = []
@@ -156,7 +159,7 @@ class CollectorHandler(webapp.RequestHandler):
                 location = l.location
                 stopKey = l.stopID + ':loc'
                 if l.stopID in validStops and stopKey not in stopLocs:
-                    logging.debug('adding location %s for stopID %s' % (location,l.stopID))
+                    #logging.debug('adding location %s for stopID %s' % (location,l.stopID))
                     stopLocs[stopKey] = location
           else:
               logging.debug('No more stop locations left in the query!')
@@ -198,7 +201,7 @@ def getRequestedStops():
                     if stopID in reqs:
                         reqs[stopID] += 1
                     else:
-                        logging.debug('new stop found... %s' % stopID)
+                        #logging.debug('new stop found... %s' % stopID)
                         reqs[stopID] = 1
           else:
               logging.debug('nothing left!')
