@@ -96,7 +96,7 @@ def handle_result(rpc,stopID,routeID,sid,directionID):
     textBody = 'unknown'
     valid = False
     if result is None or result.status_code != 200:
-           logging.error("API: Exiting early: error fetching URL: " + str(result.status_code))
+           logging.error("API: Exiting early: error fetching URL: ")
            textBody = "error " + routeID + " (missing data)"
     else:
            soup = BeautifulSoup(result.content)
