@@ -27,6 +27,20 @@ def validateDevKey(devKey):
     
 ## end validateDevKey()
 
+def conformStopID(stopID):
+
+    # we assume the stopID is four characters long. if we find it is
+    # less than that, pad the front-end of it with zeros.
+    if len(stopID) < 4:
+    	if len(stopID) == 2:
+    	    stopID = "00" + stopID
+    	else:
+    	    stopID = "0" + stopID
+    
+    return stopID
+    
+## end conformStopID()
+
 def inthepast(time):
     
     if computeCountdownMinutes(time) < 0:

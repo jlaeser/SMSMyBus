@@ -23,9 +23,9 @@ class MainHandler(webapp.RequestHandler):
           return
       
       # snare the inputs
+      stopID = utils.conformStopID(self.request.get('stopID'))
       routeID = self.request.get('routeID')
       destination = self.request.get('destination')
-      stopID = self.request.get('stopID')
       logging.debug('getstops request parameters...  routeID %s destination %s' % (routeID,destination))
       
       if utils.afterHours() is True:
@@ -260,7 +260,7 @@ def validateRequest(request,type):
         return None
     
     if type == utils.GETSTOPS:
-        stopID = request.get('stopID')
+        stopID = conformStopID(request.get('stopID'))
         routeID = request.get('routeID')
         destination = request.get('destination')
         # a stopID or routeID is required

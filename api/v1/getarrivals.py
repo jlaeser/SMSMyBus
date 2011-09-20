@@ -27,11 +27,11 @@ class MainHandler(webapp.RequestHandler):
       if devStoreKey is None:
           logging.error("failed to validate the request paramters")
           self.response.headers['Content-Type'] = 'application/javascript'
-          self.response.out.write(simplejson.dumps(utils.buildErrorResponse('-1','Illegal developer key received')))
+          self.response.out.write(simplejson.dumps(utils.buildErrorResponse('-1','Unable to validate the request. There may be an illegal developer key.')))
           return
 
       # snare the inputs
-      stopID = self.request.get('stopID')
+      stopID = utils.conformStopID(self.request.get('stopID'))
       routeID = self.request.get('routeID')
       vehicleID = self.request.get('vehicleID')
       logging.debug('getarrivals request parameters...  stopID %s routeID %s vehicleID %s' % (stopID,routeID,vehicleID))
@@ -95,7 +95,12 @@ def validateRequest(request):
             utils.recordDeveloperRequest(devStoreKey,utils.GETVEHICLE,request.query_string,request.remote_addr,'if a vehicleID is specified, you must include a routeID');
             return False
         
-    logging.debug("successfully validated command parameters")
+    # we've noticed some flagrant abuses of the API where the format
+    # of the request parameters are just bogus. check those here
+    if len(stopID) > 4:
+        return None
+        
+    #logging.debug("successfully validated command parameters")
     return devStoreKey
 
 ## end validateRequest()
