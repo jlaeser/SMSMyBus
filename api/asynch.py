@@ -6,7 +6,6 @@ from google.appengine.api import quota
 from google.appengine.api.urlfetch import DownloadError
 
 from google.appengine.ext import db
-from google.appengine.datastore import entity_pb
 
 from BeautifulSoup import BeautifulSoup, Tag
 from data_model import RouteListing
@@ -153,36 +152,16 @@ def getRouteListing(stopID,routeID=None):
     else:
         key = 'routelisting:%s:%s' % (stopID,routeID)
     
-    entities = deserialize_entities(memcache.get(key))
+    entities = utils.deserialize_entities(memcache.get(key))
     if not entities:
         if routeID is None:
             entities = db.GqlQuery("SELECT * FROM RouteListing WHERE stopID = :1",stopID).fetch(50)
         else:
             entities = db.GqlQuery("SELECT * FROM RouteListing WHERE stopID = :1 AND route = :2",stopID,routeID).fetch(50)
         if entities:
-            memcache.set(key, serialize_entities(entities))
+            memcache.set(key, utils.serialize_entities(entities))
         
     return entities
 
 ## end
 
-def serialize_entities(models):
-    if models is None:
-        return None
-    elif isinstance(models, db.Model):
-        # Just one instance
-        return db.model_to_protobuf(models).Encode()
-    else:
-        # A list
-        return [db.model_to_protobuf(x).Encode() for x in models]
-
-def deserialize_entities(data):
-    if data is None:
-        return None
-    elif isinstance(data, str):
-        # Just one instance
-        return db.model_from_protobuf(entity_pb.EntityProto(data))
-    else:
-        return [db.model_from_protobuf(entity_pb.EntityProto(x)) for x in data]
-        
-        
