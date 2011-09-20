@@ -4,6 +4,9 @@ import logging
 
 from django.utils import simplejson
 from geo.geomodel import geotypes
+
+from google.appengine.api import memcache
+
 from google.appengine.ext import webapp
 from google.appengine.ext import db
 
@@ -235,12 +238,20 @@ def routeRequest(routeID,destination):
 
 def stopLocationRequest(stopID):
     
-    stop = db.GqlQuery('select * from StopLocation where stopID = :1', stopID).get()
+    key = 'stopLocation:%s' % stopID
+    stop = memcache.get(key)
     if stop is None:
-        response_dict = {'status':'0',
-                         'info':('Stop %s not found' % stopID)
-                        }
-        return response_dict
+        logging.warn('stopLocation cache MISS - going to the datastore (%s)' % stopID)
+        stop = db.GqlQuery('select * from StopLocation where stopID = :1', stopID).get()
+        if stop is None:
+            logging.error('stopLocationRequest :: unable to locate stop %s in the datastore!?' % stopID)
+            response_dict = {'status':'0',
+                             'info':('Stop %s not found' % stopID)
+                            }
+            return response_dict
+        else:
+            #logging.debug('shoving stop %s entity into memcache' % stopID)
+            memcache.set(key,stop)
         
     return {'status':'0',
             'stopID':stopID,
@@ -260,7 +271,7 @@ def validateRequest(request,type):
         return None
     
     if type == utils.GETSTOPS:
-        stopID = conformStopID(request.get('stopID'))
+        stopID = utils.conformStopID(request.get('stopID'))
         routeID = request.get('routeID')
         destination = request.get('destination')
         # a stopID or routeID is required
