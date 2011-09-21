@@ -35,6 +35,8 @@ def conformStopID(stopID):
     if len(stopID) < 4:
     	if len(stopID) == 2:
     	    stopID = "00" + stopID
+    	elif len(stopID) == 1:
+    	    stopID = "000" + stopID
     	else:
     	    stopID = "0" + stopID
     
