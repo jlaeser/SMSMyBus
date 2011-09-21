@@ -28,10 +28,11 @@ URLBASE = "http://webwatch.cityofmadison.com/webwatch/ada.aspx?"
 CRAWL_URLBASE = "http://webwatch.cityofmadison.com/webwatch/Ada.aspx"
 
 class CrawlerHandler(webapp.RequestHandler):
-    def get(self):
+    def get(self,routeID=""):
         # create a new task with this link
-        crawlURL = "http://webwatch.cityofmadison.com/webwatch/Ada.aspx"
-        task = Task(url='/crawlingtask', params={'crawl':crawlURL,'routeID':'00'})
+        #crawlURL = "http://webwatch.cityofmadison.com/webwatch/Ada.aspx"
+        crawlURL = URLBASE + 'r=' + routeID
+        task = Task(url='/routelist/crawlingtask', params={'crawl':crawlURL,'routeID':'00'})
         task.add('crawler')
         logging.info("Added new task for %s" % crawlURL)        
         return
@@ -70,18 +71,18 @@ class CrawlingTaskHandler(webapp.RequestHandler):
             soup = BeautifulSoup(result.content)
             stopUpdates = []
             for slot in soup.html.body.findAll("a","ada"):
-                #logging.info("pulling out data from page... %s" % slot)
+                logging.info("pulling out data from page... %s" % slot)
 
                 if slot.has_key('href'):
                     href = slot['href']
                     title = slot['title']
                     logging.info("FOUND A TITLE ----> %s" % title)
                     # route crawler looks for titles with an ID# string
-                    if title.find("[ID#") > 0:
+                    if title.find("#") > 0:
                         # we finally got down to the page we're looking for
                         
                         # pull the stopID from the page content...
-                        stopID = title.split("ID#")[1].split("]")[0]
+                        stopID = title.split("#")[1].split("]")[0]
                         
                         # pull the intersection from the page content...
                         intersection = title.split("[")[0].strip()
@@ -99,42 +100,43 @@ class CrawlingTaskHandler(webapp.RequestHandler):
                             stop.intersection = intersection.upper()
                             stop.direction = direction.upper()
                             stopUpdates.append(stop)  # stop.put()
-                            logging.info("added new stop listing MINUS geo location")
+                            logging.info("ADDED StopLocation (%s) - MINUS geo location" % stopID)
                         else:
-                            logging.info("already have this stop in the table...")
+                            logging.info("StopLoation entity already exists for %s..." % stopID)
                             stopQuery[0].routeID = routeID
                             stopUpdates.append(stopQuery[0])
                         
                         # pull the route and direction data from the URL
-                        #routeData = scrapeURL.split('?')[1]
-                        #logging.info("found the page! arguments: %s stopID: %s" % (routeData,stopID))
-                        #routeArgs = routeData.split('&')
-                        #routeID = routeArgs[0].split('=')[1]
-                        #directionID = routeArgs[1].split('=')[1]
-                        #timeEstimatesURL = CRAWL_URLBASE + href
+                        routeData = scrapeURL.split('?')[1]
+                        logging.info("FOUND THE PAGE ---> arguments: %s stopID: %s" % (routeData,stopID))
+                        routeArgs = routeData.split('&')
+                        routeID = routeArgs[0].split('=')[1]
+                        directionID = routeArgs[1].split('=')[1]
+                        timeEstimatesURL = CRAWL_URLBASE + href
                     
                         # check for conflicts...
-                        #q = db.GqlQuery("SELECT * FROM RouteListing WHERE route = :1 AND direction = :2 AND stopID = :3",
-                                        #routeID, directionID, stopID)
-                        #routeQuery = q.fetch(1)
-                        #if len(routeQuery) == 0:
+                        r = db.GqlQuery("SELECT * FROM RouteListing WHERE route = :1 AND direction = :2 AND stopID = :3",
+                                        routeID, directionID, stopID).get()
+                        if r is None:
                           # add the new route to the DB
-                          #route = RouteListing()
-                          #route.route = routeID
-                          #route.direction = directionID
-                          #route.stopID = stopID
-                          #route.scheduleURL = timeEstimatesURL
-                          #route.put()
-                          #logging.info("added new route listing entry to the database!")
-                        #else:
-                          #logging.error("we found a duplicate entry!?! %s", routeQuery[0].scheduleURL)
+                          route = RouteListing()
+                          route.route = routeID
+                          route.direction = directionID
+                          route.stopID = stopID
+                          route.scheduleURL = timeEstimatesURL
+                          route.put()
+                          logging.info("added new route listing entry to the database!")
+                        else:
+                          logging.error("we found a duplicate entry!?! %s", r.scheduleURL)
                     #else: # title.split(",")[0].isdigit():
                     elif href.find("?r=") > -1:
                         # create a new task with this link
                         crawlURL = CRAWL_URLBASE + href
-                        if routeID == '00' or len(routeID) > 2:
+                        if routeID == '00':
                             routeID = href.split('r=')[1]
-                        task = Task(url='/crawlingtask', params={'crawl':crawlURL,'direction':title,'routeID':routeID})
+                        elif href.find("&") > -1:
+                            routeID = href.split('&')[0].split('r=')[1]
+                        task = Task(url='/routelist/crawlingtask', params={'crawl':crawlURL,'direction':title,'routeID':routeID})
                         task.add('crawler')
                         logging.info("Added new task for %s, direction %s, route %s" % (title.split(",")[0],title,routeID))                    
                     # label crawler looks for titles with letters for extraction/persistence
@@ -248,8 +250,8 @@ class RouteListHandler(webapp.RequestHandler):
 ## end ScrapeRouteStopHandler
 def main():
   logging.getLogger().setLevel(logging.DEBUG)
-  application = webapp.WSGIApplication([('/configure', CrawlerHandler),
-                                        ('/crawlingtask', CrawlingTaskHandler),
+  application = webapp.WSGIApplication([('/routelist/configure/(.*)', CrawlerHandler),
+                                        ('/routelist/crawlingtask', CrawlingTaskHandler),
                                         ('/routelist/(.*)', RouteListHandler),
                                         ('/droptable/(.*)', DropTableHandler),
                                         ('/debug/drop/(.*)', StartTableDrop),
