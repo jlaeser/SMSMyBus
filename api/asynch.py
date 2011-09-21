@@ -18,12 +18,6 @@ def aggregateBusesAsynch(sid, stopID, routeID=None):
     if len(stopID) == 3:
         stopID = "0" + stopID
         
-    # @todo add memcache support for route listings
-    if routeID is None:
-        q = db.GqlQuery("SELECT * FROM RouteListing WHERE stopID = :1",stopID)
-    else:
-        q = db.GqlQuery("SELECT * FROM RouteListing WHERE stopID = :1 AND route = :2",stopID,routeID)
-        
     routes = getRouteListing(stopID,routeID)
     if len(routes) == 0:
         # this can happen if the user passes in a bogus stopID
