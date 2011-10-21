@@ -120,6 +120,7 @@ def findBusAtStop(routeID, stopID):
 
 #
 # This technique spawns background tasks to collect the scheduling data
+# @fixme this should use aynchronous urlfetch (like the api)
 #
 def aggregateBuses(stopID, sid, caller):
     
@@ -141,17 +142,16 @@ def aggregateBuses(stopID, sid, caller):
     else:
         memcache.add(sid,0)
         for r in routeQuery:
-            counter = memcache.incr(sid)
-            task = Task(url='/aggr/aggregationtask', 
-                        params={'sid':sid,
-                                'stop':stopID,
-                                'route':r.route,
-                                'direction':r.direction,
-                                'url':r.scheduleURL,
-                                'caller':caller
-                                })
-            task.add('aggregation')
-            #logging.debug("Added new task for bus aggregation %s route %s counter: %s" % (sid, r.route, counter))
+          counter = memcache.incr(sid)
+          task = Task(url='/aggr/aggregationtask', 
+                      params={'sid':sid,
+                              'stop':stopID,
+                              'route':r.route,
+                              'direction':r.direction,
+                              'url':r.scheduleURL,
+                              'caller':caller
+                              })
+          task.add('aggregation')
 
     
     return
