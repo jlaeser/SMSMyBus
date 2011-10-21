@@ -13,6 +13,19 @@ from data_model import BusStopAggregation
 
 from api.v1 import utils
 
+aggregated_results = {}
+
+
+def clean(sid):
+    del aggregated_results[sid]
+## end
+
+def cleanAll():
+    logging.debug('cleaning the aggregated results list. total of %s sids' % str(len(aggregated_results)))
+    for key,value in aggregated_results.items():
+        del aggregated_results[key]
+    logging.debug('done with the clean... %s' % aggregated_results)
+## end
 
 def aggregateBusesAsynch(sid, stopID, routeID=None):
     if len(stopID) == 3:
@@ -24,20 +37,19 @@ def aggregateBusesAsynch(sid, stopID, routeID=None):
         logging.error("API: User error. There are no matching stops for this ID?!? %s" % stopID)
         return None
     else:
+    	aggregated_results[sid] = []
         # create a bunch of asynchronous url fetches to get all of the route data
         rpcs = []
         memcache.set(sid,0)
         for r in routes:
             rpc = urlfetch.create_rpc()
             rpc.callback = create_callback(rpc,stopID,r.route,sid,r.direction)
-            logging.info("API: initiating asynchronous fetch for %s" % r.scheduleURL)
             counter = memcache.incr(sid)
             urlfetch.make_fetch_call(rpc, r.scheduleURL)
             rpcs.append(rpc)
             
         # all of the schedule URLs have been fetched. now wait for them to finish
         for rpc in rpcs:
-            logging.info('waiting on rpc call... %s ' % memcache.get(sid))
             rpc.wait()
         
         # all calls should be complete at this point    
@@ -56,13 +68,11 @@ def aggregateBusesAsynch(sid, stopID, routeID=None):
 def aggregateAsynchResults(sid):
       logging.info("API: Time to report back on results for %s..." % sid)
       
-      q = db.GqlQuery("SELECT * FROM BusStopAggregation WHERE sid = :1 ORDER BY time", sid)
-      routes = q.fetch(10)
-      if len(routes) == 0:
-          #logging.debug("We couldn't find results for transaction %s. Chances are there aren't any matches with the request." % sid)
+      if len(aggregated_results[sid]) == 0:
+          logging.error("We couldn't find results for transaction %s. Chances are there aren't any matches with the request." % sid)
           textBody = "Doesn't look good... Your bus isn't running right now!"
 
-      return routes
+      return aggregated_results[sid]
   
 ## end aggregatAsynchResults()
 
@@ -99,8 +109,11 @@ def handle_result(rpc,stopID,routeID,sid,directionID):
                 arrival = slot['title']
                 textBody = arrival.replace('P.M.','pm').replace('A.M.','am')
                 valid = True
-                # add these results to datastore until we're ready to put
-                # them all together
+                
+                # the original implementaiton leveraged the datastore to store and
+                # ultimately sort the results when we got all of the routes back.
+                # we'll continute to use the model definition, but never actually store
+                # the results in the datastore.
                 stop = BusStopAggregation()
                 stop.stopID = stopID
                 stop.routeID = routeID
@@ -109,22 +122,23 @@ def handle_result(rpc,stopID,routeID,sid,directionID):
                 stop.destination = directionLabel
           
                 # turn the arrival time into absolute minutes
-                logging.debug("chop up arrival time... %s" % arrival)
                 hours = int(arrival.split(':')[0])
                 if arrival.find('P.M.') > 0 and int(hours) < 12:
                     hours += 12
                 minutes = int(arrival.split(':')[1].split()[0])
                 arrivalMinutes = (hours * 60) + minutes
-                logging.debug("chop up produced %s hours and %s minutes" % (hours,minutes))
                 stop.time = arrivalMinutes
           
                 stop.text = textBody + " toward %s" % directionLabel
-                stop.put()
+                
+                # instead of shoving this in the datastore, we're going to shove
+                # it in a local variable and retrieve it with the sid later
+                # old implementation --> stop.put()
+                insert_result(sid,stop)
 
     # create the task that glues all the messages together when 
     # we've finished the fetch tasks
     counter = memcache.decr(sid)
-    logging.info("bus route processed... new counter is %s" % counter)
     if counter == 0:
         # put them all together
         memcache.delete(sid)
@@ -132,6 +146,25 @@ def handle_result(rpc,stopID,routeID,sid,directionID):
         
     return routes
 
+## end
+
+# insert a BusAggregation result into the results array for this SID
+# we'll scan the current list and insert it into the array based
+# on the time-to-arrival
+#
+def insert_result(sid,stop):
+    if len(aggregated_results[sid]) == 0:
+        aggregated_results[sid] = [stop]
+    else:
+        done = False
+        for i, s in enumerate(aggregated_results[sid]):
+            if stop.time <= s.time:
+                    aggregated_results[sid].insert(i,stop)
+                    done = True
+                    break
+        if not done:
+            aggregated_results[sid].append(stop)
+            
 ## end
 
 # Use a helper function to define the scope of the callback.

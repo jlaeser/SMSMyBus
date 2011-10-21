@@ -111,9 +111,12 @@ def stopRequest(stopID, devStoreKey):
     response_dict = {'status':'0',
                      'timestamp':utils.getLocalTimestamp()
                      }    
-    
+                     
+    # unique key to track this request
+    t = str(time.time()).split('.')[0]
+    sid = stopID + str(devStoreKey) + t
+
     # got fetch all of the data for this stop
-    sid = stopID + str(devStoreKey) + str(time.time())
     routes = asynch.aggregateBusesAsynch(sid,stopID)
     if routes is None or len(routes) == 0:
         response_dict['status'] = '-1'
@@ -141,6 +144,9 @@ def stopRequest(stopID, devStoreKey):
     stop_dict.update({'route':route_results});
     response_dict.update({'stop':stop_dict})
         
+    # cleanup the results
+    asynchCached.clean(sid)
+    
     return response_dict
 
 ## end stopRequest()
@@ -213,7 +219,7 @@ class DevKeyHandler(webapp.RequestHandler):
 
 
 def main():
-  logging.getLogger().setLevel(logging.ERROR)
+  logging.getLogger().setLevel(logging.DEBUG)
   application = webapp.WSGIApplication([('/api/v1/getarrivals', MainHandler),
                                         ('/api/v1/createdevkey/(.*)', DevKeyHandler),
                                         ],
