@@ -145,7 +145,7 @@ def stopRequest(stopID, devStoreKey):
     response_dict.update({'stop':stop_dict})
         
     # cleanup the results
-    asynchCached.clean(sid)
+    asynch.clean(sid)
     
     return response_dict
 
@@ -219,7 +219,7 @@ class DevKeyHandler(webapp.RequestHandler):
 
 
 def main():
-  logging.getLogger().setLevel(logging.DEBUG)
+  logging.getLogger().setLevel(logging.ERROR)
   application = webapp.WSGIApplication([('/api/v1/getarrivals', MainHandler),
                                         ('/api/v1/createdevkey/(.*)', DevKeyHandler),
                                         ],
