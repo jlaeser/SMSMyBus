@@ -1,5 +1,5 @@
-application: smsmybus
-version: api-tuning
+application: smsmybus-hrd
+version: aggregatorfix
 runtime: python
 api_version: 1
 
@@ -142,7 +142,7 @@ handlers:
   login: admin
   
 # debug : create entities
-- url: /debug/create/RouteListing
+- url: /debug/create/.*
   script: crawl/crawler.py
   login: admin
 
