@@ -13,8 +13,8 @@ inbound_services:
 handlers:
 
 - url: /
-  static_files: index.html
-  upload: index.html
+  static_files: web/index.html
+  upload: web/index.html
 
 - url: /gadgets/metro/.*
   script: gadgets/gadget.py
@@ -28,7 +28,7 @@ handlers:
   upload: gadgets/style.css
 
 - url: /js
-  static_dir: js
+  static_dir: web/js
   
 - url: /css
   static_dir: css
@@ -38,20 +38,20 @@ handlers:
   login: admin
   
 - url: /img/(.*)
-  static_files: img/\1
-  upload: img/(.*)
+  static_files: web/img/\1
+  upload: web/img/(.*)
   
 - url: /favicon.ico
-  static_files: img/favicon.ico
-  upload: img/favicon.ico
+  static_files: web/img/favicon.ico
+  upload: web/img/favicon.ico
 
 - url: /apple-touch-icon.png
-  static_files: img/apple-touch-icon.png
-  upload: img/apple-touch-icon.png
+  static_files: web/img/apple-touch-icon.png
+  upload: web/img/apple-touch-icon.png
     
 - url: /robots.txt
-  static_files: robots.txt
-  upload: robots.txt
+  static_files: web/robots.txt
+  upload: web/robots.txt
 
 - url: /aggr/.*
   script: aggregator/aggregation.py
@@ -88,12 +88,6 @@ handlers:
 #
 - url: /phone/.*
   script: phone.py
-
-#
-# TWITTER access
-#
-- url: /twitter/.*
-  script: twitter.py
 
 #
 # REST access
@@ -153,20 +147,16 @@ handlers:
 #
 # Custom displays
 - url: /motherfools.*
-  static_files: motherfools/index.html
-  upload: motherfools/index.html
-
-- url: /motherfools/index-api.html
-  static_files: motherfools/index-api.html
-  upload: motherfools/index-api.html
+  static_files: web/motherfools/index.html
+  upload: web/motherfools/index.html
     
 - url: /supranet.*
-  static_files: supranet/index.html
-  upload: supranet/index.html
+  static_files: web/supranet/index.html
+  upload: web/supranet/index.html
   
 - url: /sector67.*
-  static_files: sector67/index.html
-  upload: sector67/index.html
+  static_files: web/sector67/index.html
+  upload: web/sector67/index.html
  
 - url: /labs/.*
   script: labs/mapit.py
