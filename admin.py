@@ -102,7 +102,7 @@ class AdminHandler(webapp.RequestHandler):
                          }
         
       # create a page that provides a form for sending an SMS message
-      path = os.path.join(os.path.dirname(__file__), 'admin.html')
+      path = os.path.join(os.path.dirname(__file__), 'web/admin.html')
       self.response.out.write(template.render(path,template_values))
     
 ## end AdminHandler()
