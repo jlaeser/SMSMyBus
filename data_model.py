@@ -31,39 +31,6 @@ class DestinationListing(db.Model):
     label = db.StringProperty()
 ## end DestinationListing
 
-class BusStopAggregation(db.Model):
-    dateAdded   = db.DateTimeProperty(auto_now_add=True)
-    routeID     = db.StringProperty(indexed=False)
-    stopID      = db.StringProperty(indexed=False)
-    destination = db.StringProperty(indexed=False)
-    arrivalTime = db.StringProperty(indexed=False)
-    time        = db.IntegerProperty()
-    text        = db.StringProperty(multiline=True,indexed=False)
-    sid         = db.StringProperty()
-## end BusStopAggregation
-
-class LiveRouteStatus(db.Model):
-    dateAdded    = db.DateTimeProperty(auto_now_add=True)
-    routeToken   = db.StringProperty()
-    routeID      = db.StringProperty()
-    stopID       = db.StringProperty()
-    arrivalTime  = db.StringProperty()
-    time         = db.IntegerProperty()
-    intersection = db.StringProperty()
-    destination  = db.StringProperty()
-    routeQualifier = db.StringProperty()
-    stopLocation = db.ReferenceProperty(StopLocation,collection_name="liveroutes")
-## end LiveRouteStatus
-
-class LiveVehicleStatus(db.Model):
-    dateAdded    = db.DateTimeProperty(auto_now_add=True)
-    routeID      = db.StringProperty()
-    vehicleID    = db.StringProperty()
-    location     = db.GeoPtProperty()
-    destination  = db.StringProperty()
-    nextTimepoint= db.StringProperty()
-## end LiveVehicleStatus
-
 class DeveloperKeys(db.Model):
     dateAdded      = db.DateTimeProperty(auto_now_add=True)
     developerName  = db.StringProperty()
