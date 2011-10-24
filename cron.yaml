@@ -1,8 +1,4 @@
 cron:
-- description: aggregation table cleaner
-  url: /aggr/cleandb
-  schedule: every 15 minutes
-
 - description: reset quotas for the abusers
   url: /resetquotas
   schedule: every day 14:00
