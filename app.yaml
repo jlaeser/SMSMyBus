@@ -48,24 +48,9 @@ handlers:
 - url: /robots.txt
   static_files: web/robots.txt
   upload: web/robots.txt
-
-- url: /aggr/.*
-  script: aggregator/aggregation.py
     
 - url: /loggingtask
   script: main.py
-  login: admin
-
-- url: /sendsmstask
-  script: main.py
-  login: admin
-  
-- url: /cleandb
-  script: main.py
-  login: admin
-      
-- url: /rest/prefetch/.*
-  script: rest.py
   login: admin
 
 # AppStats interface
@@ -153,8 +138,10 @@ handlers:
 - url: /debug/drop/DeveloperRequest
   script: crawl/crawler.py
   login: admin
+  
 #
-# Custom displays
+# Custom kiosk displays
+#
 - url: /motherfools.*
   static_files: web/motherfools/index.html
   upload: web/motherfools/index.html
