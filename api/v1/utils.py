@@ -21,9 +21,11 @@ def validateDevKey(devKey):
         if storeKey is None:
             return None
         else:
-            logging.error('API : devkey cache miss!')
+            logging.debug('API : devkey cache miss!')
             memcache.set(devKey, storeKey)
     
+    # we've validated the dev key at this point... start counting requests
+    total = memcache.incr(devKey + ':counter', initial_value=0)
     return storeKey
     
 ## end validateDevKey()
