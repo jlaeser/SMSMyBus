@@ -7,14 +7,6 @@ queue:
   rate: 5/s
   bucket_size: 1
 
-- name: aggregation
-  rate: 50/s
-  bucket_size: 1
-
-- name: aggregationSMS
-  rate: 10/s
-  bucket_size: 1
-
 - name: smssender
   rate: 1/s
   bucket_size: 1
