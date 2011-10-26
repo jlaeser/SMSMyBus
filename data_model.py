@@ -61,3 +61,13 @@ class ParseErrors(db.Model):
     reviewed = db.BooleanProperty()
 ## end ParseErrors
 
+class BusStopAggregation(db.Model):
+    dateAdded   = db.DateTimeProperty(auto_now_add=True)
+    routeID     = db.StringProperty(indexed=False)
+    stopID      = db.StringProperty(indexed=False)
+    destination = db.StringProperty(indexed=False)
+    arrivalTime = db.StringProperty(indexed=False)
+    time        = db.IntegerProperty()
+    text        = db.StringProperty(multiline=True,indexed=False)
+    sid         = db.StringProperty()
+## end BusStopAggregation
