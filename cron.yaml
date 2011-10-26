@@ -3,3 +3,12 @@ cron:
   url: /resetquotas
   schedule: every day 14:00
 
+- description: persist the API counters
+  url: /admin/persistcounters
+  schedule: every 1 hours from 6:00 to 00:00
+  timezone: America/Chicago
+  
+- description: email the daily report
+  url: /admin/dailyreport
+  schedule: every day 00:05
+  timezone: America/Chicago

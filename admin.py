@@ -5,9 +5,9 @@ from operator import itemgetter
 from datetime import date
 from datetime import timedelta
 
+from google.appengine.api import mail
+from google.appengine.api import memcache
 from google.appengine.api import users
-from google.appengine.api.urlfetch import DownloadError
-from google.appengine.api.labs import taskqueue
 from google.appengine.api.labs.taskqueue import Task
 from google.appengine.ext import webapp
 from google.appengine.ext import db
@@ -16,6 +16,7 @@ from google.appengine.ext.webapp import template
 from google.appengine.runtime import apiproxy_errors
 from main import PhoneLog
 
+import config
 
 class AdminHandler(webapp.RequestHandler):
     def get(self):
@@ -163,11 +164,74 @@ class Histogram(webapp.RequestHandler):
       self.response.out.write(output)
 ## end 
 
+        
+#
+# Every so often persist the API counters to the datastore
+#
+class PersistCounterHandler(webapp.RequestHandler):
+  def get(self):
+    logging.debug('persisting API counters to the datastore')
+    devkeys_to_save = []
+    devkeys = db.GqlQuery("SELECT * FROM DeveloperKeys").fetch(100)
+    for dk in devkeys:
+        counter_key = dk.developerKey + ':counter'
+        count = memcache.get(counter_key)
+        if count is not None:
+            dk.requestCounter += count
+            memcache.set(counter_key,0)
+            devkeys_to_save.append(dk)
+    
+    if len(devkeys_to_save) > 0:
+        db.put(devkeys_to_save)
+        
+    logging.debug('... done persisting %s counters' % str(len(devkeys_to_save)))
+        
+## end
+
+#
+# Daily reporting email
+#
+class DailyReportHandler(webapp.RequestHandler):
+
+    def get(self):
+      devkeys_to_save = []
+      msg_body = '\n'
+      
+      # right now we're only reporting on the API counters
+      devkeys = db.GqlQuery("SELECT * FROM DeveloperKeys").fetch(100)
+      for dk in devkeys:
+          msg_body += dk.developerName + '(%s) :  ' % dk.developerKey
+          msg_body += str(dk.requestCounter)
+          msg_body += '\n'
+          
+          # reset the daily counter
+          if dk.requestCounter > 0:
+            dk.requestCounter = 0
+            devkeys_to_save.append(dk)
+      
+      # save the modified developer keys
+      if len(devkeys_to_save) > 0:
+          db.put(devkeys_to_save)
+      
+      # setup the response email
+      message = mail.EmailMessage()
+      message.sender = config.EMAIL_SENDER_ADDRESS
+      message.to = config.EMAIL_REPORT_ADDRESS
+      message.subject = 'SMSMyBus API counters'
+      message.body = msg_body
+      
+      logging.debug('sending daily email report to %s' % message.to)
+      message.send()
+
+## end
+
 def main():
   logging.getLogger().setLevel(logging.DEBUG)
   application = webapp.WSGIApplication([('/admin.html', AdminHandler),
                                         ('/admin/sendsms', SendSMSHandler),
                                         ('/admin/histogram', Histogram),
+                                        ('/admin/persistcounters', PersistCounterHandler),
+                                        ('/admin/dailyreport', DailyReportHandler),
                                         ],
                                        debug=True)
   wsgiref.handlers.CGIHandler().run(application)
