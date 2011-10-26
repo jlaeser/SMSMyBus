@@ -69,7 +69,7 @@ def aggregateAsynchResults(sid):
       logging.info("API: Time to report back on results for %s..." % sid)
       
       if len(aggregated_results[sid]) == 0:
-          logging.error("We couldn't find results for transaction %s. Chances are there aren't any matches with the request." % sid)
+          logging.debug("We couldn't find results for transaction %s. Chances are there aren't any matches with the request." % sid)
           textBody = "Doesn't look good... Your bus isn't running right now!"
 
       return aggregated_results[sid]
