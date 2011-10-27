@@ -19,6 +19,9 @@ def validateDevKey(devKey):
         q = db.GqlQuery("SELECT __key__ FROM DeveloperKeys WHERE developerKey = :1", devKey)
         storeKey = q.get()
         if storeKey is None:
+            # @todo we can create a black list for abusive keys to avoid the
+            #   datastore query all together if this becomes a problem
+            logging.debug('API : illegal access using devkey %s' % devKey)
             return None
         else:
             logging.debug('API : devkey cache miss!')
@@ -120,7 +123,7 @@ def afterHours():
 ## end afterHours()
 
 def getDirectionLabel(directionID):
-    directionLabel = memcache.get("directionID")
+    directionLabel = memcache.get(directionID)
     if directionLabel is None:
         q = db.GqlQuery("SELECT * FROM DestinationListing WHERE id = :1", directionID)
         directionQuery = q.fetch(1)
