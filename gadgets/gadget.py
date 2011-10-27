@@ -1,20 +1,9 @@
 import os
 import wsgiref.handlers
 import logging
-from operator import itemgetter
-from datetime import date
-from datetime import timedelta
 
-from google.appengine.api import users
-from google.appengine.api.urlfetch import DownloadError
-from google.appengine.api.labs import taskqueue
-from google.appengine.api.labs.taskqueue import Task
 from google.appengine.ext import webapp
-from google.appengine.ext import db
 from google.appengine.ext.webapp import template
-
-from google.appengine.runtime import apiproxy_errors
-from data_model import PhoneLog
 
 
 class MainHandler(webapp.RequestHandler):
@@ -28,7 +17,7 @@ class MainHandler(webapp.RequestHandler):
 ## end MainHandler()
 
 def main():
-  logging.getLogger().setLevel(logging.DEBUG)
+  logging.getLogger().setLevel(logging.ERROR)
   application = webapp.WSGIApplication([('/gadgets/metro/(.*).xml', MainHandler),
                                         ],
                                        debug=True)
