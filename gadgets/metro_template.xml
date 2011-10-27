@@ -33,7 +33,7 @@
           refreshTimes();
           getStopAddress();
 
-          $(this).everyTime("121s",function() {
+          $(this).everyTime("181s",function() {
             refreshTimes();
           });
       });
