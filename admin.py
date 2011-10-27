@@ -12,8 +12,10 @@ from google.appengine.api.labs.taskqueue import Task
 from google.appengine.ext import webapp
 from google.appengine.ext import db
 from google.appengine.ext.webapp import template
+from google.appengine.ext.webapp.util import run_wsgi_app
 
 from google.appengine.runtime import apiproxy_errors
+
 from main import PhoneLog
 
 import config
@@ -177,7 +179,8 @@ class PersistCounterHandler(webapp.RequestHandler):
         counter_key = dk.developerKey + ':counter'
         count = memcache.get(counter_key)
         if count is not None:
-            dk.requestCounter += count
+            logging.debug('persisting %s at %s' % (counter_key,str(count)))
+            dk.requestCounter += int(count)
             memcache.set(counter_key,0)
             devkeys_to_save.append(dk)
     
@@ -225,16 +228,18 @@ class DailyReportHandler(webapp.RequestHandler):
 
 ## end
 
+application = webapp.WSGIApplication([('/admin.html', AdminHandler),
+                                      ('/admin/sendsms', SendSMSHandler),
+                                      ('/admin/histogram', Histogram),
+                                      ('/admin/persistcounters', PersistCounterHandler),
+                                      ('/admin/dailyreport', DailyReportHandler),
+                                      ],
+                                     debug=True)
+
 def main():
   logging.getLogger().setLevel(logging.DEBUG)
-  application = webapp.WSGIApplication([('/admin.html', AdminHandler),
-                                        ('/admin/sendsms', SendSMSHandler),
-                                        ('/admin/histogram', Histogram),
-                                        ('/admin/persistcounters', PersistCounterHandler),
-                                        ('/admin/dailyreport', DailyReportHandler),
-                                        ],
-                                       debug=True)
-  wsgiref.handlers.CGIHandler().run(application)
+  run_wsgi_app(application)
+  #wsgiref.handlers.CGIHandler().run(application)
 
 
 if __name__ == '__main__':
