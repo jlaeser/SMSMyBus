@@ -10,6 +10,8 @@ from google.appengine.api import memcache
 from google.appengine.ext import webapp
 from google.appengine.ext import db
 
+from google.appengine.ext.webapp.util import run_wsgi_app
+
 from api.v1 import utils
 from data_model import StopLocation
 
@@ -199,6 +201,7 @@ def nearbyStops(lat,lon,radius,routeID):
 
 def routeRequest(routeID,destination):
     
+    # @fixme memcache these results!
     if destination is not None:
         q = db.GqlQuery('select * from StopLocation where routeID = :1 and direction = :2 order by routeID', routeID, destination)
     else:
@@ -298,18 +301,18 @@ def validateRequest(request,type):
 
 ## end validateRequest()
 
-
+application = webapp.WSGIApplication([('/api/v1/getstops', MainHandler),
+                                      ('/api/v1/getstoplocation', MainHandler),
+                                      ('/api/v1/getvehicles', NotSupportedHandler),
+                                      ('/api/v1/getnearbystops', GetNearbyStopsHandler),
+                                      ('/api/v1/getdebug', DebugHandler),
+                                      ],
+                                     debug=True)
 
 def main():
   logging.getLogger().setLevel(logging.WARN)
-  application = webapp.WSGIApplication([('/api/v1/getstops', MainHandler),
-                                        ('/api/v1/getstoplocation', MainHandler),
-                                        ('/api/v1/getvehicles', NotSupportedHandler),
-                                        ('/api/v1/getnearbystops', GetNearbyStopsHandler),
-                                        ('/api/v1/getdebug', DebugHandler),
-                                        ],
-                                       debug=True)
-  wsgiref.handlers.CGIHandler().run(application)
+  run_wsgi_app(application)
+  #wsgiref.handlers.CGIHandler().run(application)
 
 
 if __name__ == '__main__':

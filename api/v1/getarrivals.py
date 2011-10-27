@@ -4,6 +4,8 @@ import logging
 import time
 
 from google.appengine.ext import webapp
+from google.appengine.ext.webapp.util import run_wsgi_app
+
 from django.utils import simplejson
 
 from api.v1 import utils
@@ -218,14 +220,15 @@ class DevKeyHandler(webapp.RequestHandler):
 ## end DevKeyHandler
 
 
+application = webapp.WSGIApplication([('/api/v1/getarrivals', MainHandler),
+                                      ('/api/v1/createdevkey/(.*)', DevKeyHandler),
+                                      ],
+                                     debug=True)
+
 def main():
   logging.getLogger().setLevel(logging.ERROR)
-  application = webapp.WSGIApplication([('/api/v1/getarrivals', MainHandler),
-                                        ('/api/v1/createdevkey/(.*)', DevKeyHandler),
-                                        ],
-                                       debug=True)
-  wsgiref.handlers.CGIHandler().run(application)
-
+  run_wsgi_app(application)
+  #wsgiref.handlers.CGIHandler().run(application)
 
 if __name__ == '__main__':
   main()
