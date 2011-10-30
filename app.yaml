@@ -1,5 +1,5 @@
 application: smsmybus-hrd
-version: dogfood
+version: dogfoodplus
 runtime: python
 api_version: 1
 
@@ -9,6 +9,10 @@ derived_file_type:
 inbound_services:
 - mail
 - xmpp_message
+
+builtins:
+- appstats: off
+- remote_api: on
 
 handlers:
 
@@ -53,10 +57,6 @@ handlers:
   script: main.py
   login: admin
 
-# AppStats interface
-- url: /stats.*
-  script: $PYTHON_LIB/google/appengine/ext/appstats/ui.py
-    
 #
 # ADMIN access
 #      
@@ -100,6 +100,10 @@ handlers:
   script: crawl/crawler.py
   login: admin
 
+- url: /port/.*
+  script: crawl/load_gtfs.py
+  login: admin
+  
 #
 # API access
 - url: /api/v1/getarrivals
@@ -163,3 +167,7 @@ handlers:
 - url: /.*
   script: main.py
 
+#admin_console:
+# pages:
+# - name: Appstats
+#   url: /stats

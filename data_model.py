@@ -15,8 +15,18 @@ class StopLocation(GeoModel):
     routeID      = db.StringProperty()
     intersection = db.StringProperty()
     direction    = db.StringProperty()
+    description  = db.StringProperty(multiline=True)
 ## end StopLocation    
 
+# temporary storage model for the bulk uploader
+class StopLocationLoader(db.Model):
+    stopID       = db.StringProperty()
+    name         = db.StringProperty()
+    description  = db.StringProperty(multiline=True)
+    lat          = db.FloatProperty()
+    lon          = db.FloatProperty()
+    direction    = db.StringProperty()
+## end StopLocationLoader
 
 class RouteListing(db.Model):
     route        = db.StringProperty()
