@@ -1,5 +1,6 @@
 import logging
 
+from google.appengine.api import mail
 from google.appengine.api import urlfetch
 from google.appengine.api import memcache
 from google.appengine.api import quota
@@ -12,7 +13,9 @@ from data_model import RouteListing
 from data_model import BusStopAggregation
 
 from api.v1 import utils
+import config
 
+# our local cache hashed by SID for each request
 aggregated_results = {}
 
 
@@ -27,14 +30,30 @@ def cleanAll():
     logging.debug('done with the clean... %s' % aggregated_results)
 ## end
 
+def email_missing_stop(stopID, routeID, sid):
+      # setup the response email
+      message = mail.EmailMessage()
+      message.sender = config.EMAIL_SENDER_ADDRESS
+      message.to = config.EMAIL_REPORT_ADDRESS
+      message.subject = 'Missing stop ID requested by API client - %s' % stopID
+      message.body = 'RouteID: %s \n' % routeID + 'SID: %s \n' % sid
+      message.send()
+## end
+
 def aggregateBusesAsynch(sid, stopID, routeID=None):
     if len(stopID) == 3:
         stopID = "0" + stopID
+    elif len(stopID) == 2:
+        stopID = "00" + stopID
+    elif len(stopID) == 1:
+        stopID = "000" + stopID
         
     routes = getRouteListing(stopID,routeID)
     if len(routes) == 0:
         # this can happen if the user passes in a bogus stopID
         logging.error("API: User error. There are no matching stops for this ID?!? %s" % stopID)
+        if stopID not in config.INVALID_STOP_IDS:
+            email_missing_stop(stopID,routeID,sid)
         return None
     else:
     	aggregated_results[sid] = []
@@ -174,6 +193,11 @@ def create_callback(rpc,stopID,routeID,sid,directionID):
 # Convenience method to extract RouteListing
 def getRouteListing(stopID,routeID=None):
     
+    # ignore the invalid stop IDs that keep coming in
+    if stopID in config.INVALID_STOP_IDS:
+        return []
+        
+        
     if routeID is None:
         key = 'routelisting:%s' % stopID
     else:
