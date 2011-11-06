@@ -280,22 +280,16 @@ def updateField(category,value):
                     if r:
                         if category in r.content:
                             logging.debug('found %s - %s' % (category,str(r.content[category])))
-                            if r.content[category] is None:
-                                v = 0
-                            else:
-                                v = float(r.content[category])
+                            r.content[category] = str(value)
+                            r.Push()
                         else:
                             logging.debug('could not find %s - 0' % category)
-                            v = 0
 
-                        v += value
-                        r.content[category] = str(v)
-                        r.Push()
                     else:
                         logging.error("unable to find the contents for this record!?!")
             else:
                 logging.error("couldn't find the table!?!")
-    return str(v)
+    return
 
 ## end
 
