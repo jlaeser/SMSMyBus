@@ -10,5 +10,5 @@ cron:
   
 - description: email the daily report
   url: /admin/dailyreport
-  schedule: every day 00:05
+  schedule: every day 23:57
   timezone: America/Chicago
