@@ -272,17 +272,22 @@ def updateField(category,value):
     if len(databases) != 1:
         logging.error("database query is broken!?! can't find the document")
     for db in databases:
-        logging.error("looking at a database")
         tables = db.GetTables(name=member)
         for t in tables:
             if t:
                 records = t.FindRecords('date == %s' % dateString)
                 for r in records:
                     if r:
-                        if r.content[category] is None:
-                            v = 0
+                        if category in r.content:
+                            logging.debug('found %s - %s' % (category,str(r.content[category])))
+                            if r.content[category] is None:
+                                v = 0
+                            else:
+                                v = float(r.content[category])
                         else:
-                            v = float(r.content[category])
+                            logging.debug('could not find %s - 0' % category)
+                            v = 0
+
                         v += value
                         r.content[category] = str(v)
                         r.Push()
