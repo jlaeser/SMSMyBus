@@ -18,6 +18,10 @@ from google.appengine.runtime import apiproxy_errors
 
 from main import PhoneLog
 
+import gdata.docs.service
+import gdata.spreadsheet.service
+import gdata.spreadsheet.text_db
+
 import config
 
 class AdminHandler(webapp.RequestHandler):
@@ -209,6 +213,7 @@ class DailyReportHandler(webapp.RequestHandler):
           
           # reset the daily counter
           if dk.requestCounter > 0:
+            updateField(dk.developerKey,dk.requestCounter)
             dk.requestCounter = 0
             devkeys_to_save.append(dk)
       
@@ -228,11 +233,74 @@ class DailyReportHandler(webapp.RequestHandler):
 
 ## end
 
+class CleanLogHandler(webapp.RequestHandler):
+    def get(self, the_id=""):
+        the_id = 'request@smsmybus.com'
+        logging.debug('cleaning all phonelog entries from %s' % the_id)
+        q = db.GqlQuery("select __key__ from PhoneLog where phone = :1", the_id)
+        entries = q.fetch(500)
+        offset = 500
+        while len(entries) > 0:
+            db.delete(entries)
+            entries = q.fetch(500, offset)
+            offset += 500
+            
+        self.response.out.write('done deleting %s entries from %s' % (str(offset-501),the_id))
+        
+## end
+
+class GDocHandler(webapp.RequestHandler):
+
+    def get(self):
+      devkeys = db.GqlQuery("SELECT * FROM DeveloperKeys").fetch(100)
+      for dk in devkeys:
+          logging.debug('updating gdoc for %s with %s' % (dk.developerKey,str(dk.requestCounter)))
+          updateField(dk.developerKey,dk.requestCounter)
+## end
+       
+def updateField(category,value):
+    member = 'Sheet1'
+    # get a connection to the db/spreadsheet
+    client = gdata.spreadsheet.text_db.DatabaseClient(config.GOOGLE_DOC_EMAIL,config.GOOGLE_DOC_PASSWORD)
+
+    today = date.today() + timedelta(hours=-6)
+    dateString = str(today.month)+ "/" + str(today.day) + "/" + str(today.year)
+    logging.info('adding %s to %s for %s on %s' % (value,category,member,dateString))
+
+    databases = client.GetDatabases(config.GOOGLE_DOC_KEY,
+                                    config.GOOGLE_DOC_TITLE)
+    if len(databases) != 1:
+        logging.error("database query is broken!?! can't find the document")
+    for db in databases:
+        logging.error("looking at a database")
+        tables = db.GetTables(name=member)
+        for t in tables:
+            if t:
+                records = t.FindRecords('date == %s' % dateString)
+                for r in records:
+                    if r:
+                        if r.content[category] is None:
+                            v = 0
+                        else:
+                            v = float(r.content[category])
+                        v += value
+                        r.content[category] = str(v)
+                        r.Push()
+                    else:
+                        logging.error("unable to find the contents for this record!?!")
+            else:
+                logging.error("couldn't find the table!?!")
+    return str(v)
+
+## end
+
 application = webapp.WSGIApplication([('/admin.html', AdminHandler),
                                       ('/admin/sendsms', SendSMSHandler),
                                       ('/admin/histogram', Histogram),
                                       ('/admin/persistcounters', PersistCounterHandler),
                                       ('/admin/dailyreport', DailyReportHandler),
+                                      ('/admin/clean/phonelog/(.*)', CleanLogHandler),
+                                      ('/admin/gdoctest', GDocHandler),
                                       ],
                                      debug=True)
 
