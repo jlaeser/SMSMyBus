@@ -68,7 +68,7 @@ def getarrivals(request, result_count=3):
                 response = 'Snap! The scheduling service is currently down. Please try again shortly'
             elif json_results['status'] == '-1':
                 response = "Hmmm. That's strange. It doesn't look like there are ANY routes at this stop"
-            elif json_results['status'] == 0 and json_results['info'] == 'No routes found':
+            elif json_results['status'] == '0' and json_results['info'] == 'No routes found':
                 response = "Snap! That route isn't running through this stop right now"
             else:
                 if len(json_results['stop']['route']) == 0:
