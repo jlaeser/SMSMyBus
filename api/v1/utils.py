@@ -13,6 +13,8 @@ def validateDevKey(devKey):
 
     if devKey is None:
         return None
+    else:
+        devKey = devKey.lower()
    
     storeKey = memcache.get(devKey)
     if storeKey is None:
