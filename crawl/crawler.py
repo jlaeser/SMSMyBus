@@ -90,9 +90,8 @@ class CrawlingTaskHandler(webapp.RequestHandler):
                         logging.info("found stop %s, %s" % (stopID,intersection))
                         
                         # check for conflicts...
-                        q = db.GqlQuery("SELECT * FROM StopLocation WHERE stopID = :1 and direction = :2", stopID,direction.upper())
-                        stopQuery = q.fetch(1)
-                        if len(stopQuery) == 0:
+                        stop = db.GqlQuery("SELECT * FROM StopLocation WHERE stopID = :1", stopID).get()
+                        if stop is None:
                             # add the new stop
                             stop = StopLocation()
                             stop.stopID = stopID
@@ -103,8 +102,8 @@ class CrawlingTaskHandler(webapp.RequestHandler):
                             logging.info("ADDED StopLocation (%s) - MINUS geo location" % stopID)
                         else:
                             logging.info("StopLoation entity already exists for %s..." % stopID)
-                            stopQuery[0].routeID = routeID
-                            stopUpdates.append(stopQuery[0])
+                            stop.routeID = routeID
+                            stopUpdates.append(stop)
                         
                         # pull the route and direction data from the URL
                         routeData = scrapeURL.split('?')[1]
@@ -124,6 +123,7 @@ class CrawlingTaskHandler(webapp.RequestHandler):
                           route.direction = directionID
                           route.stopID = stopID
                           route.scheduleURL = timeEstimatesURL
+                          route.stopLocation = stop
                           route.put()
                           logging.info("added new route listing entry to the database!")
                         else:
@@ -200,9 +200,9 @@ class StartTableDrop(webapp.RequestHandler):
 class CreateDeveloperKeysHandler(webapp.RequestHandler):
     def get(self):
       key = DeveloperKeys()
-      key.developerName = 'tester'
-      key.developerKey = 'mfoolskiosk'
-      key.developerEmail = 'gtracy@gmail.com'
+      key.developerName = 'Prog Mamer'
+      key.developerKey = 'fixme'
+      key.developerEmail = 'fixme@gmail.com'
       key.requestCounter = 0
       key.errorCounter = 0
       key.put()
