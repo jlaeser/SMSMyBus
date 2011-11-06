@@ -23,13 +23,3 @@ indexes:
   - name: id
     direction: desc
 
-- kind: BusStopAggregation
-  properties:
-  - name: sid
-  - name: time
-  - name: dateAdded
-  
-- kind: BusStopAggregation
-  properties:
-  - name: sid
-  - name: time
