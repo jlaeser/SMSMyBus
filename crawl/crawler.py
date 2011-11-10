@@ -123,7 +123,6 @@ class CrawlingTaskHandler(webapp.RequestHandler):
                           route.direction = directionID
                           route.stopID = stopID
                           route.scheduleURL = timeEstimatesURL
-                          route.stopLocation = stop
                           route.put()
                           logging.info("added new route listing entry to the database!")
                         else:
