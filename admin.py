@@ -170,7 +170,34 @@ class Histogram(webapp.RequestHandler):
       self.response.out.write(output)
 ## end 
 
-        
+class NormalizeLogHandler(webapp.RequestHandler):
+    def get(self):
+      callers = {}
+      cursor = None
+      
+      q = PhoneLog.all()
+      while q is not None:
+          # If the app stored a cursor during a previous request, use it.
+          if cursor:
+              q.with_cursor(cursor)
+
+          logQuery = q.fetch(500)
+          cursor = q.cursor()
+          if len(logQuery) > 0:
+            for e in logQuery:
+                if e.phone.find('@gmail.com') > 0:
+                    caller = e.phone.split('/')[0]
+                    logging.debug('truncating %s to %s' % (e.phone,caller))
+                    if caller not in callers:
+                        callers[caller] = 1
+                    e.phone = caller
+                    e.put()
+          else:
+              logging.debug('nothing left!')
+              break
+
+## end
+
 #
 # Every so often persist the API counters to the datastore
 #
@@ -210,10 +237,12 @@ class DailyReportHandler(webapp.RequestHandler):
           msg_body += dk.developerName + '(%s) :  ' % dk.developerKey
           msg_body += str(dk.requestCounter)
           msg_body += '\n'
+
+          # post counter to google doc
+          updateField(dk.developerKey,dk.requestCounter)
           
           # reset the daily counter
           if dk.requestCounter > 0:
-            updateField(dk.developerKey,dk.requestCounter)
             dk.requestCounter = 0
             devkeys_to_save.append(dk)
       
@@ -228,8 +257,8 @@ class DailyReportHandler(webapp.RequestHandler):
       message.subject = 'SMSMyBus API counters'
       message.body = msg_body
       
-      logging.debug('sending daily email report to %s' % message.to)
-      message.send()
+      #logging.debug('sending daily email report to %s' % message.to)
+      #message.send()
 
 ## end
 
@@ -278,12 +307,11 @@ def updateField(category,value):
                 records = t.FindRecords('date == %s' % dateString)
                 for r in records:
                     if r:
-                        if category in r.content:
-                            logging.debug('found %s - %s' % (category,str(r.content[category])))
+                        if category not in r.content:
+                            logging.error('could not find %s - 0' % category)
+                        else:
                             r.content[category] = str(value)
                             r.Push()
-                        else:
-                            logging.debug('could not find %s - 0' % category)
 
                     else:
                         logging.error("unable to find the contents for this record!?!")
@@ -298,8 +326,9 @@ application = webapp.WSGIApplication([('/admin.html', AdminHandler),
                                       ('/admin/histogram', Histogram),
                                       ('/admin/persistcounters', PersistCounterHandler),
                                       ('/admin/dailyreport', DailyReportHandler),
-                                      ('/admin/clean/phonelog/(.*)', CleanLogHandler),
+                                      ('/admin/phonelog/clean/(.*)', CleanLogHandler),
                                       ('/admin/gdoctest', GDocHandler),
+                                      ('/admin/phonelog/normalize', NormalizeLogHandler),
                                       ],
                                      debug=True)
 
