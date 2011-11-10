@@ -34,6 +34,8 @@ services:
 * Search for stops near a specified geo-location
 * A list of all routes in the system
 
+http://www.smsmybus.com/api
+
 ### API Resources
 
 There is a second repository that contains some example uses of the API
