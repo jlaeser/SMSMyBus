@@ -1,5 +1,5 @@
 application: smsmybus-hrd
-version: dogfoodplus
+version: kiosks
 runtime: python
 api_version: 1
 
@@ -12,10 +12,9 @@ inbound_services:
 
 builtins:
 - appstats: off
-- remote_api: on
+- remote_api: off
 
 handlers:
-
 - url: /
   static_files: web/index.html
   upload: web/index.html
@@ -146,6 +145,9 @@ handlers:
 #
 # Custom kiosk displays
 #
+- url: /kiosk
+  script: web/kiosk/kiosk.py
+  
 - url: /motherfools.*
   static_files: web/motherfools/index.html
   upload: web/motherfools/index.html
