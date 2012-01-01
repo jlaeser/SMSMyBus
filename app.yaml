@@ -1,5 +1,5 @@
 application: smsmybus-hrd
-version: parking
+version: parkingapp
 runtime: python
 api_version: 1
 

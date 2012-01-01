@@ -92,3 +92,46 @@ def getarrivals(request, result_count=3):
     return response
  
 ## end get_arrivals
+
+
+# convenienc method for accessing parking data via the API
+#
+def getparking():
+
+        # package up the API web service call and make the request
+        #
+        url = 'http://www.smsmybus.com/api/v1/getparking'
+        loop = 0
+        done = False
+        result = None
+        while not done and loop < 2:
+            try:
+              # go fetch the webpage for this route/stop!
+              result = urlfetch.fetch(url)
+              done = True;
+            except urlfetch.DownloadError:
+              logging.error("Error loading page (%s)... sleeping" % loop)
+              time.sleep(2)
+              loop = loop+1
+
+        response = '% Open :: '
+        if result is None or result.status_code != 200:
+            logging.error("Exiting early: error fetching API")
+            response = 'Snap! The scheduling service is currently down. Please try again shortly'
+        else:
+            json_results = simplejson.loads(result.content)
+            if json_results is None:
+                response = 'Snap! The parking service is currently down. Please try again shortly'
+            else:
+                for lot in json_results:
+                    fraction = float(lot['open_spots']) / float(lot['total_spots'])
+                    open = str(round(fraction * 100.0))
+                    response += '%s: %s ' % (lot['name'].replace(' Garage',''), open.replace('.0','%'))
+
+        logging.info('returning results... %s' % response)
+        return response
+ 
+#Capitol Square North Garage: 488 Overture Center Garage: 462 State Street Capitol Garage: 193 Brayton Lot: 143 Government East Garage: 15 State Street Campus Garage: 419
+#Capitol Square North: 488 Overture Center: 462 State Street Capitol: 193 Brayton Lot: 143 Government East: 15 State Street Campus: 419
+#% Open :: Capitol Square North: 80.0 Overture Center: 75.0 State Street Capitol: 23.0 Brayton Lot: 59.0 Government East: 3.0 State Street Campus: 39.0
+## end get_parking
