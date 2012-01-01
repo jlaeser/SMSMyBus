@@ -11,6 +11,9 @@ from django.utils import simplejson
 from api.v1 import utils
 from api import asynch
 
+from data_model import DeveloperKeys
+
+
 class MainHandler(webapp.RequestHandler):
     # POST not support by the API
     def post(self):
