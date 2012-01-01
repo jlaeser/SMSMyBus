@@ -65,7 +65,7 @@ def getLocalTimestamp():
     
     # get the local, server time
     ltime = time.localtime()
-    ltime_hour = ltime.tm_hour - 5  # convert to madison time
+    ltime_hour = ltime.tm_hour - 6  # convert to madison time
     ltime_hour += 24 if ltime_hour < 0 else 0
     ltime_min = ltime_hour * 60 + ltime.tm_min
     #logging.debug("local time... %s (%s:%s) day minutes %s" % (ltime,ltime_hour,ltime.tm_min,ltime_min))
