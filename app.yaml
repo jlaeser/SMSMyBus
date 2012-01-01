@@ -1,5 +1,5 @@
-application: smsmybus-hrd
-version: dogfoodplus
+application: smsmybus
+version: parking
 runtime: python
 api_version: 1
 
@@ -12,10 +12,9 @@ inbound_services:
 
 builtins:
 - appstats: off
-- remote_api: on
+- remote_api: off
 
 handlers:
-
 - url: /
   static_files: web/index.html
   upload: web/index.html
@@ -103,6 +102,10 @@ handlers:
 - url: /port/.*
   script: crawl/load_gtfs.py
   login: admin
+
+# parking API
+- url: /api/v1/getparking
+  script: api/v1/getparking.py
   
 #
 # API access
@@ -146,6 +149,9 @@ handlers:
 #
 # Custom kiosk displays
 #
+- url: /kiosk
+  script: web/kiosk/kiosk.py
+  
 - url: /motherfools.*
   static_files: web/motherfools/index.html
   upload: web/motherfools/index.html
