@@ -321,6 +321,30 @@ def updateField(category,value):
 
 ## end
 
+# this handler is intended to send out SMS messages
+# via Twilio's REST interface
+class SendSMSHandler(webapp.RequestHandler):
+    def get(self):
+      self.post()
+      
+    def post(self):
+      logging.info("Outbound SMS for ID %s to %s" % 
+                   (self.request.get('sid'), self.request.get('phone')))
+      account = twilio.Account(config.ACCOUNT_SID, config.ACCOUNT_TOKEN)
+      sms = {
+             'From' : config.CALLER_ID,
+             'To' : self.request.get('phone'),
+             'Body' : self.request.get('text'),
+             }
+      try:
+          account.request('/%s/Accounts/%s/SMS/Messages' % (config.API_VERSION, config.ACCOUNT_SID),
+                          'POST', sms)
+      except Exception, e:
+          logging.error("Twilio REST error: %s" % e)
+                        
+## end SendSMSHandler
+
+
 application = webapp.WSGIApplication([('/admin.html', AdminHandler),
                                       ('/admin/sendsms', SendSMSHandler),
                                       ('/admin/histogram', Histogram),
