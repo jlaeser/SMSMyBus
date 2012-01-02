@@ -277,6 +277,10 @@ def validateRequest(request,type):
         stopID = utils.conformStopID(request.get('stopID'))
         routeID = request.get('routeID')
         destination = request.get('destination')
+        
+        if stopID == '' or stopID == '0':
+            return None
+            
         # a stopID or routeID is required
         if routeID is None and stopID is None:
             utils.recordDeveloperRequest(devStoreKey,type,request.query_string,request.remote_addr,'either a stopID or a routeID must be included');

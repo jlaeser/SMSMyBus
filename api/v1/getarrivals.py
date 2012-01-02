@@ -83,6 +83,11 @@ def validateRequest(request):
     routeID = request.get('routeID')
     vehicleID = request.get('vehicleID')
     
+    # give up if someone asked for stop 0, which seems to be popular for some reason
+    logging.debug('validating stopID %s' % stopID);
+    if stopID == '' or stopID is '0' or stopID is '0000':
+        return None
+        
     # a stopID or routeID is required
     if stopID is None and routeID is None:
         utils.recordDeveloperRequest(devStoreKey,utils.GETARRIVALS,request.query_string,request.remote_addr,'either a stopID or a routeID must be included');
