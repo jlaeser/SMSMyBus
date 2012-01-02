@@ -12,7 +12,7 @@ class MainHandler(webapp.RequestHandler):
       if stops[0] is '':
           # default to the mother fool's kiosk results
           stops = ['1505','1878']
-      elif len(stops) == 1:
+      elif len(stops) == 1 or len(stops[1]) == 0:
           stops.append('1878')
 
       directions = self.request.get('d').split(',')
