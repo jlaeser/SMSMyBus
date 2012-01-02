@@ -130,7 +130,7 @@ class SendSMSHandler(webapp.RequestHandler):
             task.add('eventlogger')
             
             # send the SMS out...
-            task = Task(url='/sendsmstask', params={'phone':phone,
+            task = Task(url='/sms/sendsmstask', params={'phone':phone,
                                                     'sid':'admin console',
                                                     'text':text,})
             task.add('smssender')

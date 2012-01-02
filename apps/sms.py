@@ -95,7 +95,7 @@ def sendInvite(request):
       for r in requestArgs:
           phone = r.replace('(','').replace('}','').replace('-','')
           if phone.isdigit() == True:
-            task = Task(url='/sendsmstask', params={'phone':phone,
+            task = Task(url='/sms/sendsmstask', params={'phone':phone,
                                                     'sid':request.get('SmsSid'),
                                                     'text':textBody,})
             task.add('smssender')
