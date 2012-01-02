@@ -19,8 +19,12 @@ class XmppHandler(webapp.RequestHandler):
       message = xmpp.Message(self.request.POST)
       logging.info("XMPP request! Sent form %s with message %s" % (message.sender,message.body))
 
-      ## magic ##
-      response = api_bridge.getarrivals(message.body,10)
+      if message.body.lower().find('parking') > -1:
+          logging.info('parking request via XMPP')
+          response = api_bridge.getparking()
+      else:
+          ## magic ##
+          response = api_bridge.getarrivals(message.body,10)
 
       # to make it a little easier to read, add newlines before each route report line
       response = response.replace('Route','\nRoute')

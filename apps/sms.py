@@ -36,6 +36,8 @@ class SMSRequestHandler(webapp.RequestHandler):
       if msg.lower().find('invite') > -1:
           # ... an invitation request
           response = sendInvite(self.request)
+      elif msg.lower().find('parking') > -1:
+          response = api_bridge.getparking()
       else:
           ## magic ##
           response = api_bridge.getarrivals(msg,4)	  

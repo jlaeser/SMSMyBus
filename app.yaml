@@ -1,5 +1,5 @@
 application: smsmybus-hrd
-version: kiosks
+version: parkingapp
 runtime: python
 api_version: 1
 
@@ -102,6 +102,10 @@ handlers:
 - url: /port/.*
   script: crawl/load_gtfs.py
   login: admin
+
+# parking API
+- url: /api/v1/getparking
+  script: api/v1/getparking.py
   
 #
 # API access

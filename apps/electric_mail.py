@@ -20,8 +20,12 @@ class EmailRequestHandler(webapp.RequestHandler):
       body = inbound_message.subject
       logging.debug("email body arguments %s" % body)
 
-      ## magic ##
-      response = api_bridge.getarrivals(body,10)
+      if body.lower().find('parking') > -1:
+          logging.info('parking request via XMPP')
+          response = api_bridge.getparking()
+      else:
+          ## magic ##
+          response = api_bridge.getarrivals(body,10)
       
       # to make it a little easier to read, add newlines before each route report line
       response = response.replace('Route','\nRoute')
