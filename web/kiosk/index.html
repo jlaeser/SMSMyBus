@@ -3,7 +3,7 @@
 <head>
     <meta name="description" content="Real time arrival estimates for the Madison Metro.">
     <meta name="keywords" content"Madison, Metro, transit, bus schedule, smsmybus">
-    <title>Mother Fools Madison Metro Monitor by SMSmybus</title>
+    <title>Madison Metro Monitor by SMSmybus</title>
 
 	<meta http-equiv="Content-Type" content="application/xhtml+xml; charset=utf-8" />
 	<meta name="robots" content="index, follow" />
@@ -39,15 +39,15 @@
 <div class="colmask doublepage">
 	<div class="colleft">
 		<div class="col1">
-            <div class="estimates" id="{{ stop1 }}-estimates">stuff</div>
+            <div class="estimates" id="{{ stop1 }}-estimates"> </div>
 		</div>
 		<div class="col2">
-           <div class="estimates" id="{{ stop2 }}-estimates">stuff</div>
+           <div class="estimates" id="{{ stop2 }}-estimates"> </div>
 		</div>
 	</div>
 </div>
 <div id="footer">
-<p>This is an experimental effort to offer you real-time bus information while you enjoy your coffee!
+<p>This is an experimental effort to offer you real-time bus information.
 Your feedback on the accuracy and value of the information will help improve the service.</p>
 <p>Special thanks to The City of Madison for great buses and for providing the GPS data that powers this service</p>
    <div id="powered-by">
@@ -63,6 +63,18 @@ Your feedback on the accuracy and value of the information will help improve the
    <div id="contact-container">
    </div>
 </div>
+<script type="text/javascript">
 
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-2237321-13']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
 </body>
 </html>
