@@ -1,5 +1,5 @@
 application: smsmybus-hrd
-version: parkingapp
+version: apiplus
 runtime: python
 api_version: 1
 
@@ -112,9 +112,12 @@ handlers:
 - url: /api/v1/getarrivals
   script: api/v1/getarrivals.py
 
+- url: /api/v1/getroutes
+  script: api/v1/getroutes.py
+
 - url: /api/v1/get(stops|nearbystops|stoplocation|debug)
   script: api/v1/getstops.py
-
+  
 - url: /api/location
   script: api/feed.py
   login: admin
