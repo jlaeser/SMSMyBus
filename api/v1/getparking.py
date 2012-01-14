@@ -48,8 +48,6 @@ class MainHandler(webapp.RequestHandler):
         getLots(soup, json_response, "dataRow rowShade");
         getLots(soup, json_response, "dataRow");
         for lot in json_response:
-            logging.debug('lot... %s' % lot)
-            logging.debug('... name %s' % lot['name'])
             if lot['name'] == 'Brayton Lot':
                 lot['address'] = '1 South Butler St.'
                 lot['total_spots'] = '243'
@@ -115,7 +113,7 @@ application = webapp.WSGIApplication([('/api/v1/getparking', MainHandler),
                                      debug=True)
 
 def main():
-  logging.getLogger().setLevel(logging.DEBUG)
+  logging.getLogger().setLevel(logging.ERROR)
   run_wsgi_app(application)
   #wsgiref.handlers.CGIHandler().run(application)
 
