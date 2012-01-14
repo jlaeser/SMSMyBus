@@ -22,6 +22,7 @@ import gdata.docs.service
 import gdata.spreadsheet.service
 import gdata.spreadsheet.text_db
 
+import twilio
 import config
 
 class AdminHandler(webapp.RequestHandler):
@@ -114,7 +115,7 @@ class AdminHandler(webapp.RequestHandler):
     
 ## end AdminHandler()
 
-class SendSMSHandler(webapp.RequestHandler):
+class SMSResponseHandler(webapp.RequestHandler):
     def post(self):
         user = users.get_current_user()
         if user and users.is_current_user_admin():
@@ -130,7 +131,7 @@ class SendSMSHandler(webapp.RequestHandler):
             task.add('eventlogger')
             
             # send the SMS out...
-            task = Task(url='/sms/sendsmstask', params={'phone':phone,
+            task = Task(url='/admin/sendsms', params={'phone':phone,
                                                     'sid':'admin console',
                                                     'text':text,})
             task.add('smssender')
@@ -346,6 +347,7 @@ class SendSMSHandler(webapp.RequestHandler):
 
 
 application = webapp.WSGIApplication([('/admin.html', AdminHandler),
+                                      ('/admin/sendsmstask', SMSResponseHandler),
                                       ('/admin/sendsms', SendSMSHandler),
                                       ('/admin/histogram', Histogram),
                                       ('/admin/persistcounters', PersistCounterHandler),

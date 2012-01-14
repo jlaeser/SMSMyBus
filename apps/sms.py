@@ -95,42 +95,19 @@ def sendInvite(request):
       for r in requestArgs:
           phone = r.replace('(','').replace('}','').replace('-','')
           if phone.isdigit() == True:
-            task = Task(url='/sms/sendsmstask', params={'phone':phone,
-                                                    'sid':request.get('SmsSid'),
-                                                    'text':textBody,})
+            task = Task(url='/admin/sendsmstask', params={'phone':phone,
+                                                          'sid':request.get('SmsSid'),
+                                                          'text':textBody,})
             task.add('smssender')
 
       return textBody
     
 ## end sendInvite()
         
-# this handler is intended to send out SMS messages
-# via Twilio's REST interface
-class SendSMSHandler(webapp.RequestHandler):
-    def get(self):
-      self.post()
-      
-    def post(self):
-      logging.info("Outbound SMS for ID %s to %s" % 
-                   (self.request.get('sid'), self.request.get('phone')))
-      account = twilio.Account(config.ACCOUNT_SID, config.ACCOUNT_TOKEN)
-      sms = {
-             'From' : config.CALLER_ID,
-             'To' : self.request.get('phone'),
-             'Body' : self.request.get('text'),
-             }
-      try:
-          account.request('/%s/Accounts/%s/SMS/Messages' % (config.API_VERSION, config.ACCOUNT_SID),
-                          'POST', sms)
-      except Exception, e:
-          logging.error("Twilio REST error: %s" % e)
-                        
-## end SendSMSHandler
 
 def main():
   logging.getLogger().setLevel(logging.INFO)
   application = webapp.WSGIApplication([('/sms/request', SMSRequestHandler),
-                                        ('/sms/sendsmstask', SendSMSHandler),
                                         ],
                                        debug=True)
   wsgiref.handlers.CGIHandler().run(application)
