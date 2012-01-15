@@ -118,6 +118,9 @@ handlers:
 - url: /api/v1/get(stops|nearbystops|stoplocation|debug)
   script: api/v1/getstops.py
   
+- url: /api/v1/getvehicles
+  script: api/v1/getvehicles.py
+  
 - url: /api/location
   script: api/feed.py
   login: admin
