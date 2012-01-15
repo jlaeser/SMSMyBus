@@ -142,7 +142,7 @@ def getDirectionLabel(directionID):
 ## end getDirectionLabel()
 
 GETARRIVALS = "get arrivals"
-GETVEHICLE = "get vehicle"
+GETVEHICLES = "get vehicles"
 GETSTOPS = "get stops"
 GETROUTES = "get routes"
 GETNEARBYSTOPS = "get nearby stops"
