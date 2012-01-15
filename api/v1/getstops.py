@@ -15,7 +15,7 @@ from google.appengine.ext.webapp.util import run_wsgi_app
 from api.v1 import utils
 from data_model import StopLocation
 
-class MainHandler(webapp.RequestHandler):
+class GetStopHandler(webapp.RequestHandler):
     
     def get(self):
       
@@ -42,9 +42,6 @@ class MainHandler(webapp.RequestHandler):
       elif routeID is not '' and destination is not '':
           json_response = routeRequest(routeID, destination)
           utils.recordDeveloperRequest(devStoreKey,utils.GETSTOPS,self.request.query_string,self.request.remote_addr);
-      elif stopID is not '':
-          json_response = stopLocationRequest(stopID)
-          utils.recordDeveloperRequest(devStoreKey,utils.GETSTOPS,self.request.query_string,self.request.remote_addr);
       else:
           logging.error("API: invalid request")
           json_response = utils.buildErrorResponse('-1','Invalid Request parameters. Did you forget to include a routeID?')
@@ -69,7 +66,55 @@ class MainHandler(webapp.RequestHandler):
         self.response.out.write(simplejson.dumps(utils.buildErrorResponse('-1','The API does not support POST requests')))
         return
 
-## end MainHandler
+## end GetStopHandler
+
+class GetStopLocationHandler(webapp.RequestHandler):
+    
+    def get(self):
+      
+      # validate the request parameters
+      devStoreKey = validateRequest(self.request,utils.GETSTOPLOCATION)
+      if devStoreKey is None:
+          logging.debug("unable to validate the request parameters")
+          self.response.headers['Content-Type'] = 'application/javascript'
+          self.response.out.write(simplejson.dumps(utils.buildErrorResponse('-1','Illegal request parameters')))
+          return
+      
+      # snare the inputs
+      stopID = utils.conformStopID(self.request.get('stopID'))
+      logging.debug('getstoplocation request parameters...  stopID %s' % stopID)
+      
+      if utils.afterHours() is True:
+          # don't run these jobs during "off" hours
+	      json_response = utils.buildErrorResponse('-1','The Metro service is not currently running')
+      elif stopID is not '':
+          json_response = stopLocationRequest(stopID)
+          utils.recordDeveloperRequest(devStoreKey,utils.GETSTOPS,self.request.query_string,self.request.remote_addr);
+      else:
+          logging.error("API: invalid request")
+          json_response = utils.buildErrorResponse('-1','Invalid Request parameters. Did you forget to include a stpID?')
+          utils.recordDeveloperRequest(devStoreKey,utils.GETSTOPS,self.request.query_string,self.request.remote_addr,'illegal query string combination');
+
+      #logging.debug('API: json response %s' % json_response);    
+      # encapsulate response in json
+      callback = self.request.get('callback')
+      if callback is not '':
+          self.response.headers['Content-Type'] = 'application/javascript'
+          self.response.headers['Access-Control-Allow-Origin'] = '*'
+          self.response.headers['Access-Control-Allow-Methods'] = 'GET'
+          response = callback + '(' + simplejson.dumps(json_response) + ');'
+      else:
+          self.response.headers['Content-Type'] = 'application/json'
+          response = simplejson.dumps(json_response)
+      
+      self.response.out.write(response)
+
+    def post(self):
+        self.response.headers['Content-Type'] = 'application/javascript'
+        self.response.out.write(simplejson.dumps(utils.buildErrorResponse('-1','The API does not support POST requests')))
+        return
+
+## end GetStopLocationHandler
 
 class GetNearbyStopsHandler(webapp.RequestHandler):
     
@@ -306,8 +351,8 @@ def validateRequest(request,type):
 
 ## end validateRequest()
 
-application = webapp.WSGIApplication([('/api/v1/getstops', MainHandler),
-                                      ('/api/v1/getstoplocation', MainHandler),
+application = webapp.WSGIApplication([('/api/v1/getstops', GetStopHandler),
+                                      ('/api/v1/getstoplocation', GetStopLocationHandler),
                                       ('/api/v1/getvehicles', NotSupportedHandler),
                                       ('/api/v1/getnearbystops', GetNearbyStopsHandler),
                                       ('/api/v1/getdebug', DebugHandler),
