@@ -30,7 +30,7 @@ class MainHandler(webapp.RequestHandler):
       # snare the inputs
       stopID = utils.conformStopID(self.request.get('stopID'))
       routeID = self.request.get('routeID')
-      destination = self.request.get('destination')
+      destination = self.request.get('destination').upper()
       logging.debug('getstops request parameters...  routeID %s destination %s' % (routeID,destination))
       
       if utils.afterHours() is True:
@@ -270,24 +270,25 @@ def validateRequest(request,type):
     # validate the key
     devStoreKey = utils.validateDevKey(request.get('key'))
     if devStoreKey is None:
+        logging.debug('... illegal developer key %s' % request.get('key'))
         utils.recordDeveloperRequest(None,utils.GETSTOPS,request.query_string,request.remote_addr,'illegal developer key specified');
         return None
     
     if type == utils.GETSTOPS:
-        stopID = utils.conformStopID(request.get('stopID'))
         routeID = request.get('routeID')
-        destination = request.get('destination')
+        destination = request.get('destination').upper()
         
-        if stopID == '' or stopID == '0':
+        # a routeID is required
+        if routeID is None or routeID is '':
+            utils.recordDeveloperRequest(devStoreKey,type,request.query_string,request.remote_addr,'a routeID must be included');
             return None
-            
-        # a stopID or routeID is required
-        if routeID is None and stopID is None:
-            utils.recordDeveloperRequest(devStoreKey,type,request.query_string,request.remote_addr,'either a stopID or a routeID must be included');
-            return None
-        elif destination is not None and routeID is None:
+        elif destination is not None and routeID is '':
             utils.recordDeveloperRequest(devStoreKey,type,request.query_string,request.remote_addr,'if a destination is specified, a routeID must be included');
             return None
+    elif type == utils.GETSTOPLOCATION:
+        stopID = utils.conformStopID(request.get('stopID'))
+        if stopID == '' or stopID == '0' or stopID == '00':
+            return None            
     elif type == utils.GETNEARBYSTOPS:
         lat = request.get('lat')
         lon = request.get('lon')
@@ -314,7 +315,7 @@ application = webapp.WSGIApplication([('/api/v1/getstops', MainHandler),
                                      debug=True)
 
 def main():
-  logging.getLogger().setLevel(logging.WARN)
+  logging.getLogger().setLevel(logging.DEBUG)
   run_wsgi_app(application)
   #wsgiref.handlers.CGIHandler().run(application)
 
