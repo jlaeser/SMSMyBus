@@ -146,6 +146,7 @@ GETVEHICLE = "get vehicle"
 GETSTOPS = "get stops"
 GETROUTES = "get routes"
 GETNEARBYSTOPS = "get nearby stops"
+GETSTOPLOCATION = "get stop location"
 
 def recordDeveloperRequest(devKey,type,terms,ipaddr,error='success'):
 
