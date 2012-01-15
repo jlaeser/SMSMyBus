@@ -199,8 +199,8 @@ class NotSupportedHandler(webapp.RequestHandler):
 def nearbyStops(lat,lon,radius,routeID):
 
     # limit the radius value to 500
-    if radius > 500:
-        radius = 500
+    if radius > 1000:
+        radius = 1000
 
     if routeID is None or routeID == "":
         #logging.debug('nearbyStops (%s,%s,%s,%s)' % (lat,lon,radius,routeID))
