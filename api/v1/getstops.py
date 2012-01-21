@@ -259,9 +259,10 @@ def routeRequest(routeID,destination):
         return response_dict
         
     response_dict = {'status':'0',
+                     'timestamp':utils.getLocalTimestamp(),
+                     'routeID':routeID
                     }    
     
-    route_dict = {'routeID':routeID,}
     stop_results = []
     for s in stops:
         if s.location is None:
@@ -277,8 +278,7 @@ def routeRequest(routeID,destination):
                           }))
     
     # add the populated stop details to the response
-    route_dict.update({'stops':stop_results})
-    response_dict.update({'stop':route_dict})
+    response_dict.update({'stops':stop_results})
         
     return response_dict
 
