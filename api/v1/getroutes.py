@@ -99,7 +99,7 @@ def getRoutes(refresh):
     routes = q.fetch(1000)
 
     hits = {}
-    response_dict = {'status':0}
+    response_dict = {'status':0,'timestamp':utils.getLocalTimestamp()}
     while len(routes) > 0:
         offset += len(routes)
 
