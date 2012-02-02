@@ -40,7 +40,9 @@ class SMSRequestHandler(webapp.RequestHandler):
           response = api_bridge.getparking()
       else:
           ## magic ##
-          response = api_bridge.getarrivals(msg,4)	  
+          response = api_bridge.getarrivals(msg,4)
+          if len(response) > 140:
+              response = response[0:140]
 
       # create an event to log the request
       task = Task(url='/loggingtask', params={'phone':self.request.get('From'),
