@@ -46,3 +46,37 @@ There is a Google Group used for developer discussion
 
 http://groups.google.com/group/smsmybus-dev
 
+Running Your Own Instance
+-------------------------
+
+You can deploy your own instance of SMSMyBus for testing or for
+running your own version of the API, either on the Google infrastructure
+or locally using the Python SDK dev_appserver. Before deploying,
+copy config.py-sample to config.py and customize the settings to
+your own email address, Twillio API keys, etc. If you are deploying
+locally, not using the SMS features, and will not export statistics
+to Google Docs, you may not need to change anything.
+
+Deploy/run the application, and visit
+http://baseurl/debug/create/newkey 
+
+You will likely need to log in at that time. If running locally,
+be sure to click on 'Sign in as administrator' to create the key.
+
+That will create your first developer key, 'fixme'. You can go to 
+the Datastore Viewer ( http://localhost:8080/_ah/admin/datastore ) 
+and edit your new key.
+
+Finally, you need to load route data. SMSMyBus crawls the Madison
+Metro website to load route and stop data. It starts by inserting
+a seed URL into an App Engine Task Queue. A background job pulls
+that URL from the queue, fetches and parses the page, and recursively
+discovers links to routes and stops, inserting those links back
+into the queue. To start the crawl, visit:
+
+http://localhost:8080/routelist/configure/ 
+
+You should now be able to use the API as documented to fetch realtime
+bus data, substituting your URL for smsmybus.com 
+
+http://www.smsmybus.com/api
