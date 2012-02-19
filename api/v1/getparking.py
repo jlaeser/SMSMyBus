@@ -25,7 +25,8 @@ class MainHandler(webapp.RequestHandler):
         return
     
     def get(self):
-      
+        events = {}
+        
         loop = 0
         done = False
         result = None
@@ -62,9 +63,14 @@ class MainHandler(webapp.RequestHandler):
                 specialEvents = simplejson.loads(eventsResult.content)
                 cacheexpiretime = datetime.datetime.strptime(specialEvents['CacheUntil'], "%Y-%m-%dT%H:%M:%S")
                 diff = cacheexpiretime - datetime.datetime.now()
-                seconds = diff.days*86400+diff.seconds
-                logging.info("API: Caching Special Events Parking for %d more seconds" % seconds)
-                memcache.set('ParkingEvents', specialEvents, seconds)
+                seconds = (diff.days*86400) + diff.seconds
+                if seconds < 0:
+                    # if the data from scraper is stale we need to ignore it
+                    logging.error('API parking: Special events feed is stale')
+                    specialEvents = {}
+                else:
+                    logging.info("API: Caching Special Events Parking for %d more seconds" % seconds)
+                    memcache.set('ParkingEvents', specialEvents, seconds)
 		
 
         searchwindow = self.request.get_range('searchwindow', default=3, min_value=0, max_value=24)
@@ -76,9 +82,9 @@ class MainHandler(webapp.RequestHandler):
                 testingtime = datetime.datetime.fromtimestamp(float(testingtimeparam))
             except ValueError:
                 logging.debug("Invalid date passed for testing, ignoring: %s" % testingtimeparam)
-            
+        
         events = parseSpecialEvents(specialEvents, searchwindow, testingtime)
-  
+        
         soup = BeautifulSoup(result.content)
         json_response = []
         getLots(soup, json_response, "dataRow rowShade");
@@ -166,7 +172,7 @@ def getParkingSpecialEvents():
           done = True;
        except urlfetch.DownloadError:
           logging.error("Error loading page (%s)... sleeping" % loop)
-       if result:
+       if result is None:
           logging.debug("Error status: %s" % result.status_code)
           logging.debug("Error header: %s" % result.headers)
           logging.debug("Error content: %s" % result.content)
@@ -192,6 +198,10 @@ def parseSpecialEvents(se, searchwindow, providedtime=None):
     ramps['Overture Center Garage'] = None
     ramps['State Street Campus Garage'] = None
     ramps['State Street Capitol Garage'] = None
+    
+    # bale if the the special events map is empty
+    if not se:
+        return ramps
 
     # for testing purposes, we allow for the notion
     # of "current time" to be provided at by the API
@@ -203,7 +213,7 @@ def parseSpecialEvents(se, searchwindow, providedtime=None):
     # GAE stores times in UTC, but the scraper stores them in central time.
     ltime += datetime.timedelta(hours = -6)
 
-    logging.debug("API: searchiwndow is %d" % searchwindow)
+    logging.debug("API: searchiwindow is %d" % searchwindow)
     logging.debug("API: It is %s" % ltime.strftime('%m/%d/%Y %H:%M:%S %Z'))
     for e in se['ParkingSpecialEvents']:
          warntime = datetime.datetime.strptime(e['ParkingStartTime'], "%Y-%m-%dT%H:%M:%S") + datetime.timedelta(hours=-searchwindow)
@@ -236,7 +246,7 @@ application = webapp.WSGIApplication([('/api/v1/getparking', MainHandler),
                                      debug=True)
 
 def main():
-  logging.getLogger().setLevel(logging.ERROR)
+  logging.getLogger().setLevel(logging.DEBUG)
   run_wsgi_app(application)
   #wsgiref.handlers.CGIHandler().run(application)
 
