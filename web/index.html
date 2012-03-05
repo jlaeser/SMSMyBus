@@ -1,111 +1,222 @@
+<!DOCTYPE html>
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="en">
+<head>
+	<meta charset="utf-8">
 
-<html>
-  <head>
-    <meta name="description" content="A telephone application that lets you check Madison bus schedules in real time.">
-    <meta name="keywords" content="Twilio, bus schedule, SMS, madison, metro, mymetro, mymetrobus, google app engine, cloud computing, telephone, telephony, smsmybus">
-    <meta name="google-site-verification" content="H9cmKbLovDFqlBKn-lLv7ojvKOQ599AKKsJ7QgrM1fA" />
-    <title>SMSMyBus - Check the bus schedule in real time</title>
-    <link rel="stylesheet" href="css/style.css">
-  </head>
-
-<body>  
-
-<div id="page-container">
- <div id="header">
- <center><img src="img/header.png" alt="smsmybus logo"></center>
- </div>
- <div id="description">
-  <center>SMSMyBus is a mobile telephone application that lets you find real time bus arrivals for 
-  the <a class="description-anchor" href=http://www.cityofmadison.com/metro/>Madison Metro</a>.
-  Just text your request to 608.467.1603 to receive <i>real time</i> arrival estimates.</center>
-  <div id="by">
-  <div id="bybus">
-   <h2>locate by bus</h2>
-   &lt;route #&gt; &lt;stop #&gt;
-   <div id="example">
-    Find the arrival for a specific bus route at a specific bus stop. 
-    <p>For example, texting "19 1787" will identify the next three buses to arrive at
-    Pinckney/Main on the Square.
-   </div>
-  </div>
-  <div id="bystop">
-   <h2>locate by stop</h2>
-   &lt;stop #&gt;
-   <div id="example">
-    Find the arrivals of the next four buses at a specific bus stop. 
-    <p>For example, texting "1787" will identify the next four buses to arrive at 
-    Pinckney/Main on the Square.
-   </div>
-  </div>
-  </div>
- </div>
- <div id="spacer"></div>
+	<meta name="description" content="A telephone application that lets you check Madison bus schedules in real time.">
+	<meta name="keywords" content="Twilio, bus schedule, SMS, madison, metro, mymetro, mymetrobus, google app engine, cloud computing, telephone, telephony, smsmybus">
+	<meta name="google-site-verification" content="H9cmKbLovDFqlBKn-lLv7ojvKOQ599AKKsJ7QgrM1fA" />
+	<title>SMSMyBus - Check the bus schedule in real time</title>
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0;" />
  
- <div id="extras">
-  <div id="other-interfaces">
-    <h2>More ways to find your bus!</h2>
-    <p>The following methods can be used to query the Metro system as well. Follow the same rules as above
-    when you're searching for a bus at a particular stop or <i>all</i> buses for a stop.</p>
-    <h3>Google Talk / Jabber</h3>
-    <p>Jabber your query to <strong>smsmybus@appspot.com</strong>, and we'll reply back with your results. The syntax is identical to the SMS syntax.</p>
-    <h3>Email</h3>
-    <p>Email your query to <a href=mailto:request@smsmybus.com>request@smsmybus.com</a> with the 
-    details in the subject line, and I'll reply with your details.</p>
-    <h3>Phone (beta)</h3>
-    <p>Dial in using the same number - 608.467.1603 - and follow the prompts. Please <a href=mailto:feedback@smsmybus.com>send me your feedback</a>.</p>
-    <h2>Invite your friends</h2>
-    <p>You can invite your friends to use the SMS service by sending me their mobile number. Just
-    send me a text with "invite ##########" in the message and I'll forward an invitation to them.</p>
-    <h2>Are you a developer?</h2>
-    <p>Take advantage of the <a href=/api/>SMSMyBus API</a> to build your own transit application for the Madison Metro.</p>
-    <p>The API provides access to real-time arrival estimates, location data, and more. Go check out the <a href=/api/>documentation</a>.</p>
-  </div>
- 
-  <div id="donate">
-   <form action="https://www.paypal.com/cgi-bin/webscr" method="post">
-   <input type="hidden" name="cmd" value="_s-xclick">
-   <input type="hidden" name="hosted_button_id" value="99TCXWRTE6PHW">
-   <input type="image" src="https://www.paypal.com/en_US/i/btn/btn_donateCC_LG.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">
-   <img alt="" border="0" src="https://www.paypal.com/en_US/i/scr/pixel.gif" width="1" height="1">
-   </form>
-   <br><strong>Please consider a donation to help cover our costs.</strong>
-  </div>
- 
- </div>
- <div id="spacer"></div>
- <hr>
- <div id="footer">
-  <div id="powered-by">
-     powered by:<br><br>
-     <a href=http://code.google.com/appengine/><img src="img/gae-logo.png" alt="google app engine" height="30" width="30"></a>
-     <a href=http://twilio.com><img src="img/twilio-logo.jpg" alt="twilio" height="30" width="30"></a>
-  </div>
-  <div id="me">
-   <a href=http://www.gregtracy.com>Greg Tracy</a> - <a href=http://twitter.com/gregtracy>@gregtracy</a>
-  </div>
-  <div id="contact-container">
-   terms - privacy - <a href="mailto:greg@gregtracy.com?subject=SMSMyBus%20feedback">feedback</a>
-  </div>
- </div>
-</div>
+	<!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
+	<!--[if lt IE 9]>
+	  <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+	<!-- Le styles -->
+	<link href="/css/bootstrap.css" rel="stylesheet" type="text/css">
+	<link href="/css/bootstrap-responsive.css" rel="stylesheet" type="text/css">
+	<link href="/css/skin.css" rel="stylesheet" type="text/css">
+<!-- Le fav and touch icons -->
+	<link rel="shortcut icon" href="images/favicon.ico">
+	<link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+	<link rel="apple-touch-icon" sizes="72x72" href="images/apple-touch-icon-72x72.png">
+	<link rel="apple-touch-icon" sizes="114x114" href="images/apple-touch-icon-114x114.png">
+</head>
 
-<script type="text/javascript">
+<body onload="setTimeout(function() { window.scrollTo(0, 1) }, 200);">
+	<div class="navbar navbar-fixed-top">
+		<div class="navbar-inner">
+			<div class="container">
+				<a class="brand" href="/">SMSMyBus</a>
 
-  var _gaq = _gaq || [];
-  _gaq.push(['_setAccount', 'UA-2237321-13']);
-  _gaq.push(['_trackPageview']);
+				<div class="nav-collapse">
+					<ul class="nav">
+						<li class="active hidden"><a href="/">Home</a></li>
 
-  (function() {
-    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-  })();
+						<li class="hidden"><a href="/api/">API</a></li>
 
-</script>
+						<li class="hidden"><a href="/blog/">Blog</a></li>
+					</ul>
+				</div><!--/.nav-collapse -->
+				<a class="btn btn-info feedback" href="mailto:feedback@smsmybus.com?subject=Suggestions%20or%20Feedback">Suggestions | Feedback</a>
+			</div>
+		</div>
+	</div>
 
-  </body>
+	<div class="container body">
+		<!-- Main hero unit for a primary marketing message or call to action -->
+
+		<div class="hero-unit">
+
+			<h1> <img src="/img/skin/phone.gif" alt="phone"><img class="smsmybus-image" src="/img/skin/smsmybus.gif" alt="clock"><img src="/img/skin/bus.gif" alt="bus"> </h1>
+
+			<h2>A mobile telephone application that lets you find real time bus arrivals for the Madison Metro.</h2>
+
+			<p>Just text your request to <a href="tel:608.467.1603">608.467.1603</a> to receive real time arrival estimates.</p>
+		</div><!-- Example row of columns -->
+
+		<div class="row">
+			<div class="span4 examples">
+				<h2>How Does it Work:</h2>
+
+				<div class="accordion" id="accordion">
+					<div class="accordion-group">
+						<div class="accordion-heading">
+							<a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#collapseOne">Locate by Route</a>
+						</div>
+
+						<div id="collapseOne" class="accordion-body in collapse">
+							<div class="accordion-inner">
+								<p>Find the arrival for a specific bus route at a specific bus stop.</p>
+
+								<p>By sending a text message with the <code>route number</code> and <code>stop number</code> to <code><a href="tel:608.467.1603">608.467.1603</a></code> you will receive a text with the next three busses to arrive at this stop.</p>
+
+								<h4>For example</h4>
+
+								<p><img src="/img/skin/keys/underline/key_1.png"><img src="/img/skin/keys/underline/key_9.png">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="/img/skin/keys/underline/key_1.png"><img src="/img/skin/keys/underline/key_7.png"><img src="/img/skin/keys/underline/key_8.png"><img src="/img/skin/keys/underline/key_7.png"></p>
+
+								<p>This will identify the next three buses to arrive at Pinckney/Main on the Square.</p>
+								<pre>
+Stop 1787 :
+  Route 19, 10:45 pm toward Allied Chalet
+</pre>
+							</div>
+						</div>
+					</div>
+
+					<div class="accordion-group">
+						<div class="accordion-heading">
+							<a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#collapseTwo">Locate by Stop</a>
+						</div>
+
+						<div id="collapseTwo" class="accordion-body collapse">
+							<div class="accordion-inner">
+								<p>Find the arrival of the next four busses at a specific bus stop.</p>
+
+								<p>By sending a text message with the <code>stop number</code> to <code><a href="tel:608.467.1603">608.467.1603</a></code> you will recieve a text with the next four busses to arrive at this stop.</p>
+
+								<h4>For example</h4>
+
+								<p><img src="/img/skin/keys/underline/key_1.png"><img src="/img/skin/keys/underline/key_7.png"><img src="/img/skin/keys/underline/key_8.png"><img src="/img/skin/keys/underline/key_7.png"></p>
+
+								<p>This will identify the next four buses to arrive at Pinckney/Main on the Square.</p>
+								<pre>
+Stop 1787 :
+  Route 70, 11:06 pm toward Middleton,
+  Route 04, 11:19 pm toward STP,
+  Route 06, 11:26 pm toward E Towne,
+  Route 02, 11:33 pm toward
+</pre>
+							</div>
+						</div>
+					</div>
+
+					
+				</div>
+			</div>
+
+			<div class="span4">
+				<h2>More ways to find your bus!</h2>
+
+				<div>
+					<p>The following methods can be used to query the Metro system as well. Follow the same guidelines as shown in to the left when you are preforming a search.</p>
+					
+					<h3>Jabber | XMPP</h3>
+					<p>Submit your query to <code><a href="mailto:request@smsmybus.com">request@smsmybus.com</a></code>.using your favorite <a href="http://xmpp.org/xmpp-software/clients/" class="xmpp" rel="popover" data-content="An XMPP client is any software or application that enables you to connect to an XMPP for instant messaging with other people over the Internet. This includes Google Chat, Addium, iChat and many others." data-original-title="Jabber | XMPP">XMPP chat client</a></p>
+					
+					<h3>Email</h3>
+					<p>Email your query to <code><a href="mailto:request@smsmybus.com">request@smsmybus.com</a></code> with your query in the subject line</p>
+					
+					<h3>Phone</h3>
+					<p>Dial in using the same number <code><a href="tel:608.467.1603">608.467.1603</a></code> and follow the prompts. <span class="label label-info">BETA</span></p>
+
+					
+
+					
+				</div>
+			</div>
+
+			<div class="span4">
+				<h2>Developers API</h2>
+
+				<p>The <a href="/api/">SMSMyBus developer API</a> provides access to real-time arrival estimates, location data, and more.</p>
+
+				<p>The <a href="/api/">API</a> is aimed at providing access to well-formed transit data for the Madison Metro service.</p>
+
+				<h3>How do I get started?</h3>
+
+				<p>The first step is to register for a developer key. You'll need to use this key when you make calls to the <a href="/api/">API</a>.</p>
+
+				<p><a class="btn btn-large btn-info" href="mailto:api@smsmybus.com?subject=Developer%20Key%20Registration">Register for a developer key</a></p>
+			</div>
+		</div>
+		<hr>
+
+		<footer>
+			<div class="row">
+				<div class="span2">
+					<p><a class="powered-by" href="http://code.google.com/appengine/"><img rel="popover" data-content="Google App Engine enables you to build and host web apps on the same systems that power Google applications.?" data-original-title="Google App Engine" src="/img/skin/appengine.png" width="20px" height="20px"></a> <a class="powered-by" href="http://www.twilio.com/gallery/projects/SMSMyBus"><img rel="popover" data-content="Twilio provides infrastructure APIs for businesses to build scalable, reliable voice and text messaging apps." data-original-title="Twilio" src="/img/skin/twilio.png" width="20px" height="20px"></a> <a class="powered-by" href="http://twitter.github.com/bootstrap/"><img rel="popover" data-content="Simple and flexible HTML, CSS, and Javascript for popular user interface components and interactions." data-original-title="Bootstrap" src="/img/skin/bootstrap.png" width="20px" height="20px"></a></p>
+				</div>
+
+				<div class="span3 offset7">
+					<form id="donate" action="https://www.paypal.com/cgi-bin/webscr" method="post">
+						<input type="hidden" name="cmd" value="_s-xclick"> <input type="hidden" name="hosted_button_id" value="99TCXWRTE6PHW"> <span class="span"><img src="/img/skin/paypal.png" alt="PayPal - The safer, easier way to pay online!"></span> <span><strong>Please consider donating to help cover the costs and keep this service free.</strong></span>
+					</form>
+				</div>
+			</div>
+		</footer>
+
+		<div id="register" class="modal hide fade" style="display: none; ">
+			<div class="modal-header">
+				<a class="close" data-dismiss="modal">×</a>
+
+				<h3>Registering for a Developers Key</h3>
+			</div>
+
+			<form>
+				<div class="modal-body">
+					<h4><label for="textarea">Describe your application</label></h4>
+					<textarea class="input-xlarge" id="reg-textarea" rows="3">
+</textarea>
+
+					<h4><label for="email-address">Email Address</label></h4><input class="span3" type="text" id="reg-email-address" name="email-address">
+				</div>
+
+				<div class="modal-footer">
+					<a href="#" class="btn btn-primary">Submit</a> <a href="#" class="btn" data-dismiss="modal">Cancel</a>
+				</div>
+			</form>
+		</div>
+
+		
+	</div><!-- /container -->
+	<!-- Le javascript
+	================================================== -->
+	<!-- Placed at the end of the document so the pages load faster -->
+	<script src="/js/libs/jquery-1.7.1.min.js" type="text/javascript"></script>
+	<script src="/js/bootstrap-transition.js" type="text/javascript"></script>
+	<script src="/js/bootstrap-collapse.js" type="text/javascript"></script>
+	<script src="/js/bootstrap-tooltip.js" type="text/javascript"></script>
+	<script src="/js/bootstrap-popover.js" type="text/javascript"></script>
+	<script src="/js/bootstrap-modal.js" type="text/javascript"></script>
+	
+	<script src="/js/scripts.js" type="text/javascript"></script>
+	<script>
+	
+	var _gaq = _gaq || [];
+	_gaq.push(['_setAccount', 'UA-2237321-13']);
+	_gaq.push(['_trackPageview']);
+	
+	(function() {
+		var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+		ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+		var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+	})();
+	
+	</script>
+
+</body>
 </html>
-
